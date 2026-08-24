@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
 import { LiveWorkspaceView } from "@/components/live/live-workspace"
@@ -12,6 +12,9 @@ const actions = {
   pendingBookmarkIds: new Set<string>(),
   notedIds: new Set<string>(),
   notesSaving: false,
+  recordingActive: false,
+  recordingPending: false,
+  onRecordingToggle: vi.fn(),
   onBookmark: vi.fn(),
   onNote: vi.fn(),
   onExplain: vi.fn(),
@@ -88,6 +91,23 @@ describe("LiveWorkspaceView", () => {
     expect(english).toHaveAttribute("lang", "en")
     expect(screen.getByText("Live")).toBeInTheDocument()
     expect(screen.getByText("EN → VI")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Start meeting recording" }))
+    expect(actions.onRecordingToggle).toHaveBeenCalled()
+  })
+
+  it("shows explicit stop state while recording", () => {
+    render(<LiveWorkspaceView
+      state={{
+        ...initialLiveMeetingState,
+        connectionState: "connected",
+        sessionState: "live",
+        activeMeetingId: "current-meeting",
+      }}
+      {...actions}
+      recordingActive
+    />)
+
+    expect(screen.getByRole("button", { name: "Stop meeting recording" })).toBeInTheDocument()
   })
 
   it("renders a clear backend disconnected state", () => {

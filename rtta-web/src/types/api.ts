@@ -57,6 +57,23 @@ export interface MeetingSummaryDto {
   createdAt: string
 }
 
+export type RecordingStatus = "RECORDING" | "UPLOADING" | "READY" | "FAILED"
+
+export interface RecordingDto {
+  id: string
+  meetingId: string
+  format: string
+  sampleRate: number
+  channels: number
+  bitsPerSample: number
+  recordingStartOffsetMs: number
+  startedAt: string
+  endedAt: string | null
+  durationMs: number | null
+  sizeBytes: number | null
+  status: RecordingStatus
+}
+
 export interface ResearchNoteDto {
   id: string
   meetingId: string

@@ -5,6 +5,7 @@ import { CompletedMeetingOverview } from "@/components/meeting/completed-meeting
 import { listBookmarks } from "@/lib/api/bookmarks"
 import { getMeeting, listMeetings } from "@/lib/api/meetings"
 import { listNotes } from "@/lib/api/notes"
+import { listRecordings } from "@/lib/api/recordings"
 import { generateMeetingSummary, getMeetingSummary } from "@/lib/api/summaries"
 import type { MeetingDto, MeetingSummaryDto } from "@/types/api"
 
@@ -17,6 +18,12 @@ vi.mock("@/lib/api/notes", () => ({
 }))
 vi.mock("@/lib/api/summaries", () => ({
   generateMeetingSummary: vi.fn(), getMeetingSummary: vi.fn(),
+}))
+vi.mock("@/lib/api/recordings", () => ({
+  listRecordings: vi.fn(),
+  recordingPlaybackUrl: vi.fn(() => "http://localhost:8080/recording.wav"),
+  startRecording: vi.fn(),
+  stopRecording: vi.fn(),
 }))
 
 const meeting: MeetingDto = {
@@ -61,6 +68,7 @@ describe("CompletedMeetingOverview", () => {
       createdAt: "2026-08-25T00:01:03Z", updatedAt: "2026-08-25T00:01:03Z",
     }])
     vi.mocked(generateMeetingSummary).mockReset()
+    vi.mocked(listRecordings).mockResolvedValue([])
   })
 
   it("renders a persisted summary, bookmarks, and notes after refresh", async () => {

@@ -19,6 +19,13 @@ spring:
           time_zone: UTC
   main:
     banner-mode: off
+  task:
+    execution:
+      thread-name-prefix: rtta-storage-
+      pool:
+        core-size: 1
+        max-size: 2
+        queue-capacity: 16
 
 logging:
   level:
@@ -27,6 +34,16 @@ logging:
     com.rtta.dorriss.translation: INFO
 
 rtta:
+  storage:
+    minio:
+      endpoint: ${RTTA_MINIO_ENDPOINT:http://localhost:9000}
+      access-key: ${RTTA_MINIO_ACCESS_KEY:}
+      secret-key: ${RTTA_MINIO_SECRET_KEY:}
+      recordings-bucket: ${RTTA_MINIO_RECORDINGS_BUCKET:rtta-recordings}
+      documents-bucket: ${RTTA_MINIO_DOCUMENTS_BUCKET:rtta-documents}
+      presigned-url-duration: ${RTTA_MINIO_PRESIGNED_URL_DURATION:15m}
+  recording:
+    temp-directory: ${RTTA_RECORDING_TEMP_DIRECTORY:${java.io.tmpdir}/rtta-recordings}
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY:}

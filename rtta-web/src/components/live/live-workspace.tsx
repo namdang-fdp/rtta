@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CircleAlert, Clock3, PlugZap, RadioTower, WifiOff, X } from "lucide-react"
+import { CircleAlert, CircleStop, Clock3, LoaderCircle, Mic, PlugZap, RadioTower, WifiOff, X } from "lucide-react"
 
 import { ConceptExplanationPanel } from "@/components/context/concept-explanation-panel"
 import { LiveTranslationSurface } from "@/components/live/live-translation-surface"
@@ -18,6 +18,7 @@ import { useLiveMeeting } from "@/hooks/use-live-meeting"
 import { useConceptExplanation } from "@/hooks/use-concept-explanation"
 import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { useMeetingNotes } from "@/hooks/use-meeting-notes"
+import { useMeetingRecordings } from "@/hooks/use-meeting-recordings"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { formatElapsed } from "@/lib/format"
 import type { LiveMeetingState, TranslationUtterance } from "@/types/live"
@@ -27,6 +28,7 @@ export function LiveWorkspace() {
   const explanation = useConceptExplanation()
   const bookmarks = useMeetingBookmarks(state.activeMeetingId)
   const notes = useMeetingNotes(state.activeMeetingId)
+  const recordings = useMeetingRecordings(state.activeMeetingId)
   const useDockedConceptPanel = useMediaQuery("(min-width: 1320px)")
 
   return (
@@ -39,6 +41,9 @@ export function LiveWorkspace() {
         pendingBookmarkIds={bookmarks.pendingIds}
         notedIds={notes.notedIds}
         notesSaving={notes.saving}
+        recordingActive={Boolean(recordings.activeRecording)}
+        recordingPending={recordings.pending}
+        onRecordingToggle={() => void (recordings.activeRecording ? recordings.stop() : recordings.start())}
         onBookmark={(utterance) => {
           if (utterance.utteranceId) {
             void bookmarks.toggle({ id: utterance.utteranceId, offsetMs: utterance.offsetMs })
@@ -70,10 +75,11 @@ export function LiveWorkspace() {
         dockExplanation={useDockedConceptPanel}
         closeExplanation={explanation.close}
         explanationController={explanation}
-        bookmarkError={bookmarks.error ?? notes.error}
+        bookmarkError={bookmarks.error ?? notes.error ?? recordings.error}
         clearBookmarkError={() => {
           bookmarks.clearError()
           notes.clearError()
+          recordings.clearError()
         }}
       />
 
@@ -97,6 +103,9 @@ interface LiveWorkspaceViewProps {
   pendingBookmarkIds: Set<string>
   notedIds: Set<string>
   notesSaving: boolean
+  recordingActive: boolean
+  recordingPending: boolean
+  onRecordingToggle: () => void
   onBookmark: (utterance: TranslationUtterance) => void
   onNote: (utterance: TranslationUtterance) => void
   onExplain: (utterance: TranslationUtterance) => void
@@ -116,6 +125,9 @@ export function LiveWorkspaceView({
   pendingBookmarkIds,
   notedIds,
   notesSaving,
+  recordingActive,
+  recordingPending,
+  onRecordingToggle,
   onBookmark,
   onNote,
   onExplain,
@@ -135,7 +147,13 @@ export function LiveWorkspaceView({
   return (
     <div className="flex h-full min-h-0 bg-background">
       <section className="flex min-w-0 flex-1 flex-col">
-        <LiveHeader state={state} elapsed={elapsed} />
+        <LiveHeader
+          state={state}
+          elapsed={elapsed}
+          recordingActive={recordingActive}
+          recordingPending={recordingPending}
+          onRecordingToggle={onRecordingToggle}
+        />
 
         {state.lastError ? (
           <div className="flex shrink-0 items-center gap-3 border-b border-destructive/20 bg-destructive/7 px-4 py-2.5 text-sm text-destructive md:px-8">
@@ -217,7 +235,19 @@ export function LiveWorkspaceView({
   )
 }
 
-function LiveHeader({ state, elapsed }: { state: LiveMeetingState; elapsed: string }) {
+function LiveHeader({
+  state,
+  elapsed,
+  recordingActive,
+  recordingPending,
+  onRecordingToggle,
+}: {
+  state: LiveMeetingState
+  elapsed: string
+  recordingActive: boolean
+  recordingPending: boolean
+  onRecordingToggle: () => void
+}) {
   const live = state.sessionState === "live"
   const interrupted = state.connectionState === "reconnecting" || state.connectionState === "disconnected"
 
@@ -258,10 +288,22 @@ function LiveHeader({ state, elapsed }: { state: LiveMeetingState; elapsed: stri
               ) : null}
             </div>
           </div>
-          <div className="hidden items-center gap-2 rounded-full border bg-surface-soft px-3 py-1.5 text-xs text-muted-foreground md:flex">
-            <RadioTower className="size-3.5" />
-            English speech · Vietnamese reading
-          </div>
+          {live ? (
+            <Button
+              variant={recordingActive ? "destructive" : "outline"}
+              size="sm"
+              onClick={onRecordingToggle}
+              disabled={recordingPending || interrupted || !state.activeMeetingId}
+              aria-label={recordingActive ? "Stop meeting recording" : "Start meeting recording"}
+            >
+              {recordingPending ? <LoaderCircle className="animate-spin" /> : recordingActive ? <CircleStop /> : <Mic />}
+              {recordingActive ? "Stop recording" : "Record"}
+            </Button>
+          ) : (
+            <div className="hidden items-center gap-2 rounded-full border bg-surface-soft px-3 py-1.5 text-xs text-muted-foreground md:flex">
+              <RadioTower className="size-3.5" />English speech · Vietnamese reading
+            </div>
+          )}
         </div>
       </header>
       <div className="h-[3px] shrink-0 bg-muted">

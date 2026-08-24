@@ -13,6 +13,8 @@ import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { useMeetingNotes } from "@/hooks/use-meeting-notes"
 import { useMeetingSelection } from "@/hooks/use-meeting-selection"
 import { useMeetingSummary } from "@/hooks/use-meeting-summary"
+import { useMeetingRecordings } from "@/hooks/use-meeting-recordings"
+import { recordingPlaybackUrl } from "@/lib/api/recordings"
 import { formatOffset } from "@/lib/format"
 
 export function CompletedMeetingOverview({ meetingId }: { meetingId?: string }) {
@@ -20,6 +22,7 @@ export function CompletedMeetingOverview({ meetingId }: { meetingId?: string }) 
   const bookmarks = useMeetingBookmarks(selection.resolvedMeetingId)
   const notes = useMeetingNotes(selection.resolvedMeetingId)
   const summary = useMeetingSummary(selection.resolvedMeetingId)
+  const recordings = useMeetingRecordings(selection.resolvedMeetingId)
 
   if (selection.loading) return <StatusMessage icon={<LoaderCircle className="animate-spin" />} title="Loading meeting…" />
   if (selection.error) return <StatusMessage icon={<AlertCircle />} title="Meeting unavailable" detail={selection.error} />
@@ -44,16 +47,20 @@ export function CompletedMeetingOverview({ meetingId }: { meetingId?: string }) 
           </div>
           <h1 className="editorial-title text-[clamp(2.15rem,5vw,3.75rem)] font-bold leading-[1.12]">{meeting.title}</h1>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button disabled title="No recording is stored for this meeting yet"><PlayCircle />Replay audio</Button>
+            {recordings.latestReady ? (
+              <audio controls preload="metadata" src={recordingPlaybackUrl(id, recordings.latestReady.id)} className="h-10 max-w-full" aria-label="Meeting recording playback" />
+            ) : (
+              <Button disabled title="No playable recording is stored for this meeting"><PlayCircle />Replay audio</Button>
+            )}
             <Button asChild variant="outline"><Link href={`/meetings/${id}/transcript`}><FileText />Full transcript</Link></Button>
             <Button asChild variant="ghost"><Link href={`/meetings/${id}/notes`}><NotebookPen />Research notes</Link></Button>
           </div>
         </header>
 
-        {(summary.error || bookmarks.error || notes.error) ? (
+        {(summary.error || bookmarks.error || notes.error || recordings.error) ? (
           <div className="mb-6 flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            <span>{summary.error ?? bookmarks.error ?? notes.error}</span>
+            <span>{summary.error ?? bookmarks.error ?? notes.error ?? recordings.error}</span>
           </div>
         ) : null}
 

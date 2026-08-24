@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.rtta.dorriss.live.LiveSessionHub;
 import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
+import com.rtta.dorriss.recording.MeetingRecordingService;
 import com.rtta.dorriss.transcript.TranscriptUtterance;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -39,6 +40,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private final TranslationWireProtocol translationWireProtocol;
 	private final LiveSessionHub liveSessionHub;
 	private final RealtimeMeetingCoordinator meetingCoordinator;
+	private final MeetingRecordingService recordingService;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
 	private final Map<String, SerializedOutboundWebSocket> outboundConnections =
 			new ConcurrentHashMap<>();
@@ -48,12 +50,14 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			TranslationProvider translationProvider,
 			TranslationWireProtocol translationWireProtocol,
 			LiveSessionHub liveSessionHub,
-			RealtimeMeetingCoordinator meetingCoordinator) {
+			RealtimeMeetingCoordinator meetingCoordinator,
+			MeetingRecordingService recordingService) {
 		this.controlProtocol = controlProtocol;
 		this.translationProvider = translationProvider;
 		this.translationWireProtocol = translationWireProtocol;
 		this.liveSessionHub = liveSessionHub;
 		this.meetingCoordinator = meetingCoordinator;
+		this.recordingService = recordingService;
 	}
 
 	int activeSessionCount() {
@@ -132,6 +136,14 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 					socket,
 					"translation-provider-failure",
 					"Translation provider stopped accepting audio");
+			return;
+		}
+		try {
+			recordingService.acceptPcm(session.meetingId(), pcm);
+		}
+		catch (RuntimeException exception) {
+			LOGGER.warn("RTTA RECORDING frameIgnored meeting={} cause={}",
+					session.meetingId(), exception.getClass().getSimpleName());
 		}
 	}
 
@@ -278,6 +290,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		finally {
 			if (resources.liveAnnounced()) {
 				Instant stoppedAt = Instant.now();
+				recordingService.stopForMeeting(session.meetingId());
 				meetingCoordinator.stop(
 						session.command().sessionId(),
 						stoppedAt,
@@ -480,6 +493,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 		private synchronized void attachMeeting(UUID meetingId) {
 			this.meetingId = meetingId;
+		}
+
+		private synchronized UUID meetingId() {
+			return meetingId;
 		}
 
 		private synchronized boolean beginClosing() {

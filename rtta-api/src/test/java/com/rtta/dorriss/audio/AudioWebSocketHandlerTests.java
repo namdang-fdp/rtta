@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -16,18 +17,46 @@ import java.util.function.Consumer;
 
 import com.rtta.dorriss.live.LiveSessionHub;
 import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
+import com.rtta.dorriss.recording.MeetingRecordingService;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
 import com.rtta.dorriss.translation.TranslationSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketMessage;
 import org.springframework.web.socket.WebSocketSession;
 import tools.jackson.databind.ObjectMapper;
 
 class AudioWebSocketHandlerTests {
+
+	@Test
+	void recordingFailureDoesNotInterruptAcceptedTranslationAudio() throws Exception {
+		CapturingTranslationProvider provider = new CapturingTranslationProvider();
+		RealtimeMeetingCoordinator coordinator = mock(RealtimeMeetingCoordinator.class);
+		MeetingRecordingService recording = mock(MeetingRecordingService.class);
+		UUID meetingId = UUID.randomUUID();
+		when(coordinator.start(any(), any())).thenReturn(meetingId);
+		doAnswer(invocation -> { throw new IllegalStateException("disk unavailable"); })
+				.when(recording).acceptPcm(any(), any());
+		AudioWebSocketHandler handler = new AudioWebSocketHandler(
+				new AudioControlProtocol(new ObjectMapper()), provider,
+				new TranslationWireProtocol(new ObjectMapper()),
+				new LiveSessionHub(new ObjectMapper()), coordinator, recording);
+		WebSocketSession socket = mock(WebSocketSession.class);
+		when(socket.getId()).thenReturn("recording-failure");
+		when(socket.isOpen()).thenReturn(true);
+		handler.afterConnectionEstablished(socket);
+		handler.handleTextMessage(socket, new TextMessage(startMessage(UUID.randomUUID())));
+
+		handler.handleBinaryMessage(socket, new BinaryMessage(new byte[1_600]));
+
+		assertThat(provider.session.pushCount()).isEqualTo(1);
+		assertThat(handler.activeSessionCount()).isEqualTo(1);
+		verify(socket, never()).close(any(CloseStatus.class));
+	}
 
 	@Test
 	void translationSendFailureClosesProviderAndWebSocketResources() throws Exception {
@@ -37,7 +66,8 @@ class AudioWebSocketHandlerTests {
 				provider,
 				new TranslationWireProtocol(new ObjectMapper()),
 				new LiveSessionHub(new ObjectMapper()),
-				mock(RealtimeMeetingCoordinator.class));
+				mock(RealtimeMeetingCoordinator.class),
+				mock(MeetingRecordingService.class));
 		WebSocketSession socket = mock(WebSocketSession.class);
 		AtomicInteger sendCount = new AtomicInteger();
 		UUID sessionId = UUID.randomUUID();
@@ -95,9 +125,11 @@ class AudioWebSocketHandlerTests {
 	private static final class CapturingTranslationSession implements TranslationSession {
 
 		private final AtomicBoolean closed = new AtomicBoolean();
+		private final AtomicInteger pushCount = new AtomicInteger();
 
 		@Override
 		public void pushAudio(byte[] pcm) {
+			pushCount.incrementAndGet();
 		}
 
 		@Override
@@ -107,6 +139,10 @@ class AudioWebSocketHandlerTests {
 
 		private boolean closed() {
 			return closed.get();
+		}
+
+		private int pushCount() {
+			return pushCount.get();
 		}
 	}
 }
