@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import com.rtta.dorriss.PostgresIntegrationTestSupport;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -42,7 +43,7 @@ import org.springframework.context.annotation.Import;
 				"rtta.translation.provider=fake"
 		})
 @Import(AudioWebSocketIntegrationTests.FakeProviderConfiguration.class)
-class AudioWebSocketIntegrationTests {
+class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 
 	@LocalServerPort
 	private int port;
