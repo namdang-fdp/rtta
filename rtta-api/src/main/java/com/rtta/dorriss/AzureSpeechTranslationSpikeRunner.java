@@ -31,7 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "spike.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "spike.enabled", havingValue = "true", matchIfMissing = false)
 final class AzureSpeechTranslationSpikeRunner implements CommandLineRunner, ExitCodeGenerator {
 
 	private static final String SDK_VERSION = "1.51.0";

@@ -1,11 +1,17 @@
 package com.rtta.dorriss.audio;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.rtta.dorriss.translation.TranslationEvent;
+import com.rtta.dorriss.translation.TranslationProvider;
+import com.rtta.dorriss.translation.TranslationSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -22,14 +28,26 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private static final long METRICS_LOG_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(5);
 
 	private final AudioControlProtocol controlProtocol;
+	private final TranslationProvider translationProvider;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
 
-	AudioWebSocketHandler(AudioControlProtocol controlProtocol) {
+	AudioWebSocketHandler(
+			AudioControlProtocol controlProtocol,
+			TranslationProvider translationProvider) {
 		this.controlProtocol = controlProtocol;
+		this.translationProvider = translationProvider;
 	}
 
 	int activeSessionCount() {
 		return activeSessions.size();
+	}
+
+	AudioSessionSnapshot activeSessionSnapshot(UUID sessionId) {
+		return activeSessions.values().stream()
+				.filter(session -> session.command().sessionId().equals(sessionId))
+				.findFirst()
+				.map(session -> session.metrics().snapshot(System.nanoTime()))
+				.orElse(null);
 	}
 
 	@Override
@@ -74,13 +92,26 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		if (session.metrics().shouldLog(arrivalNanos, METRICS_LOG_INTERVAL_NANOS)) {
 			logMetrics("active", snapshot);
 		}
-		// S02 intentionally discards the raw PCM payload here.
+
+		ByteBuffer payload = message.getPayload().asReadOnlyBuffer();
+		byte[] pcm = new byte[payload.remaining()];
+		payload.get(pcm);
+		try {
+			session.pushAudio(pcm);
+		}
+		catch (RuntimeException exception) {
+			failConnection(
+					socket,
+					"translation-provider-failure",
+					"Translation provider stopped accepting audio");
+		}
 	}
 
 	@Override
 	public void afterConnectionClosed(WebSocketSession socket, CloseStatus status) {
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
+			closeTranslation(session, "unexpected-disconnect");
 			logSummary("unexpected-disconnect", session.metrics().snapshot(System.nanoTime()));
 		}
 	}
@@ -89,6 +120,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	public void handleTransportError(WebSocketSession socket, Throwable exception) {
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
+			closeTranslation(session, "transport-error");
 			logSummary("transport-error", session.metrics().snapshot(System.nanoTime()));
 		}
 		LOGGER.warn(
@@ -106,12 +138,30 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	}
 
 	private void handleStart(WebSocketSession socket, StartCommand command) {
+		Instant startedAt = Instant.now();
 		AudioConnectionSession newSession = new AudioConnectionSession(
 				command,
-				new AudioSessionMetrics(command, Instant.now(), System.nanoTime()));
+				new AudioSessionMetrics(command, startedAt, System.nanoTime()),
+				startedAt);
 		AudioConnectionSession existing = activeSessions.putIfAbsent(socket.getId(), newSession);
 		if (existing != null) {
 			failConnection(socket, "duplicate-start", "Only one START is allowed per WebSocket");
+			return;
+		}
+
+		TranslationSession translationSession;
+		try {
+			translationSession = translationProvider.open(
+					event -> logTranslation(command.sessionId(), newSession.startedAt(), event));
+		}
+		catch (RuntimeException exception) {
+			failConnection(
+					socket,
+					"translation-open-failed",
+					"Translation provider could not open the session");
+			return;
+		}
+		if (!newSession.attachTranslation(translationSession)) {
 			return;
 		}
 
@@ -138,6 +188,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		}
 
 		if (activeSessions.remove(socket.getId(), session)) {
+			closeTranslation(session, "normal-stop");
 			logSummary("normal-stop", session.metrics().snapshot(System.nanoTime()));
 			sendText(socket, "STOPPED");
 		}
@@ -146,6 +197,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private void failConnection(WebSocketSession socket, String reason, String detail) {
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
+			closeTranslation(session, reason);
 			logSummary(reason, session.metrics().snapshot(System.nanoTime()));
 		}
 		LOGGER.warn("RTTA AUDIO protocolError connection={} reason={} detail={}", socket.getId(), reason, detail);
@@ -155,6 +207,18 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		}
 		catch (IOException | RuntimeException exception) {
 			LOGGER.debug("Unable to close rejected WebSocket connection {}", socket.getId(), exception);
+		}
+	}
+
+	private void closeTranslation(AudioConnectionSession session, String reason) {
+		try {
+			session.closeTranslation();
+		}
+		catch (RuntimeException exception) {
+			LOGGER.warn(
+					"RTTA TRANSLATION cleanupFailed session={} reason={}",
+					session.command().sessionId(),
+					reason);
 		}
 	}
 
@@ -206,6 +270,32 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 				metrics.unexpectedFrameSizeCount());
 	}
 
+	private void logTranslation(UUID sessionId, Instant sessionStartedAt, TranslationEvent event) {
+		long observedElapsedMs = Math.max(
+				0,
+				Duration.between(sessionStartedAt, event.observedAt()).toMillis());
+		long recognizedAudioEndMs = event.audioOffsetMs() + event.audioDurationMs();
+		long estimatedLagMs = observedElapsedMs - recognizedAudioEndMs;
+		LOGGER.info(
+				"RTTA TRANSLATION {}\n"
+						+ "session={} observedAt={} estimatedLagMs={}\n"
+						+ "EN: {}\n"
+						+ "VI: {}\n"
+						+ "offsetMs={} durationMs={}",
+				event.type(),
+				sessionId,
+				event.observedAt(),
+				estimatedLagMs,
+				logText(event.sourceText()),
+				logText(event.translatedText()),
+				event.audioOffsetMs(),
+				event.audioDurationMs());
+	}
+
+	private String logText(String text) {
+		return text.isBlank() ? "(empty)" : text.replaceAll("[\\r\\n]+", " ");
+	}
+
 	private String formatMillis(double value) {
 		return String.format(java.util.Locale.ROOT, "%.1f", value);
 	}
@@ -214,6 +304,60 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		return String.format(java.util.Locale.ROOT, "%.1f", value);
 	}
 
-	private record AudioConnectionSession(StartCommand command, AudioSessionMetrics metrics) {
+	private static final class AudioConnectionSession {
+
+		private final StartCommand command;
+		private final AudioSessionMetrics metrics;
+		private final Instant startedAt;
+
+		private TranslationSession translationSession;
+		private boolean closed;
+
+		private AudioConnectionSession(
+				StartCommand command,
+				AudioSessionMetrics metrics,
+				Instant startedAt) {
+			this.command = command;
+			this.metrics = metrics;
+			this.startedAt = startedAt;
+		}
+
+		private StartCommand command() {
+			return command;
+		}
+
+		private AudioSessionMetrics metrics() {
+			return metrics;
+		}
+
+		private Instant startedAt() {
+			return startedAt;
+		}
+
+		private synchronized boolean attachTranslation(TranslationSession session) {
+			if (closed) {
+				session.close();
+				return false;
+			}
+			translationSession = session;
+			return true;
+		}
+
+		private synchronized void pushAudio(byte[] pcm) {
+			if (closed || translationSession == null) {
+				throw new IllegalStateException("Translation session is not active");
+			}
+			translationSession.pushAudio(pcm);
+		}
+
+		private synchronized void closeTranslation() {
+			if (closed) {
+				return;
+			}
+			closed = true;
+			if (translationSession != null) {
+				translationSession.close();
+			}
+		}
 	}
 }

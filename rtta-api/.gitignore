@@ -43,3 +43,6 @@ target/
 /samples/*.mp3
 /samples/*.m4a
 /samples/*.mp4
+
+# Opt-in Azure Speech SDK diagnostic output
+/azure-speech-sdk*.log

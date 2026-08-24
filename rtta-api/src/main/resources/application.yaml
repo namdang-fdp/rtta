@@ -10,6 +10,23 @@ logging:
   level:
     root: WARN
     com.rtta.dorriss.audio: INFO
+    com.rtta.dorriss.translation: INFO
+
+rtta:
+  translation:
+    provider: ${RTTA_TRANSLATION_PROVIDER:azure}
+    source-language: ${SPEECH_SOURCE_LANGUAGE:en-US}
+    target-language: ${SPEECH_TARGET_LANGUAGE:vi}
+    development-session-limit: ${RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT:120s}
+    phrase-list:
+      # Intentionally disabled by default; domain-context integration will be revisited in S06.
+      enabled: ${RTTA_TRANSLATION_PHRASE_LIST_ENABLED:false}
+      weight: ${RTTA_TRANSLATION_PHRASE_LIST_WEIGHT:1.1}
+      terms: ${RTTA_TRANSLATION_PHRASE_LIST_TERMS:pulsar,neutron star,radio telescope,magnetic field}
+    azure:
+      key: ${SPEECH_KEY:}
+      region: ${SPEECH_REGION:koreacentral}
+      sdk-log-file: ${RTTA_TRANSLATION_AZURE_SDK_LOG_FILE:}
 
 spike:
   enabled: false
