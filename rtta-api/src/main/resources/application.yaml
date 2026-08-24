@@ -69,7 +69,7 @@ rtta:
     target-language: ${SPEECH_TARGET_LANGUAGE:vi}
     development-session-limit: ${RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT:120s}
     phrase-list:
-      # Intentionally disabled by default; domain-context integration will be revisited in S06.
+      # Intentionally disabled by default as a product policy.
       enabled: ${RTTA_TRANSLATION_PHRASE_LIST_ENABLED:false}
       weight: ${RTTA_TRANSLATION_PHRASE_LIST_WEIGHT:1.1}
       terms: ${RTTA_TRANSLATION_PHRASE_LIST_TERMS:pulsar,neutron star,radio telescope,magnetic field}

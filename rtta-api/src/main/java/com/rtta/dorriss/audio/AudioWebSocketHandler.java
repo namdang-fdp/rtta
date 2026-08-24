@@ -422,23 +422,15 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		long recognizedAudioEndMs = event.audioOffsetMs() + event.audioDurationMs();
 		long estimatedLagMs = observedElapsedMs - recognizedAudioEndMs;
 		LOGGER.info(
-				"RTTA TRANSLATION {}\n"
-						+ "session={} observedAt={} estimatedLagMs={}\n"
-						+ "EN: {}\n"
-						+ "VI: {}\n"
-						+ "offsetMs={} durationMs={}",
+				"RTTA TRANSLATION type={} session={} observedAt={} estimatedLagMs={} offsetMs={} durationMs={} sourceChars={} translatedChars={}",
 				event.type(),
 				sessionId,
 				event.observedAt(),
 				estimatedLagMs,
-				logText(event.sourceText()),
-				logText(event.translatedText()),
 				event.audioOffsetMs(),
-				event.audioDurationMs());
-	}
-
-	private String logText(String text) {
-		return text.isBlank() ? "(empty)" : text.replaceAll("[\\r\\n]+", " ");
+				event.audioDurationMs(),
+				event.sourceText().length(),
+				event.translatedText().length());
 	}
 
 	private String formatMillis(double value) {

@@ -1,5 +1,5 @@
 /.env
+*.log
 
 # Local infrastructure state is stored in named Docker volumes.
 /infra/.runtime/
-
