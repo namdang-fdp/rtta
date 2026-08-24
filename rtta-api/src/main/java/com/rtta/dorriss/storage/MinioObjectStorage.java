@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.Http.Method;
 import io.minio.MinioClient;
+import io.minio.RemoveObjectArgs;
 import io.minio.UploadObjectArgs;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,18 @@ public class MinioObjectStorage {
 		}
 		catch (Exception exception) {
 			throw new ObjectStorageException("Object playback URL creation failed", exception);
+		}
+	}
+
+	public void delete(String bucket, String objectKey) {
+		try {
+			client().removeObject(RemoveObjectArgs.builder()
+					.bucket(bucket)
+					.object(objectKey)
+					.build());
+		}
+		catch (Exception exception) {
+			throw new ObjectStorageException("Object deletion failed", exception);
 		}
 	}
 

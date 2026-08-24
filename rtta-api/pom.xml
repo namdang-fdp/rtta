@@ -31,6 +31,7 @@
 		<azure-speech-sdk.version>1.51.0</azure-speech-sdk.version>
 		<google-genai.version>1.67.0</google-genai.version>
 		<minio.version>9.0.1</minio.version>
+		<tika.version>3.3.2</tika.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -72,6 +73,16 @@
 			<groupId>io.minio</groupId>
 			<artifactId>minio</artifactId>
 			<version>${minio.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>${tika.version}</version>
 		</dependency>
 
 		<dependency>

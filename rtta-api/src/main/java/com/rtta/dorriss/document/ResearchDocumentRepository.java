@@ -13,4 +13,6 @@ public interface ResearchDocumentRepository extends JpaRepository<ResearchDocume
 	Optional<ResearchDocument> findByIdAndMeetingId(UUID id, UUID meetingId);
 
 	Optional<ResearchDocument> findFirstByMeetingIdAndSha256(UUID meetingId, String sha256);
+
+	boolean existsByMeetingIdAndStatus(UUID meetingId, DocumentStatus status);
 }

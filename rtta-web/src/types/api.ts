@@ -74,6 +74,21 @@ export interface RecordingDto {
   status: RecordingStatus
 }
 
+export type DocumentStatus = "UPLOADED" | "PROCESSING" | "READY" | "FAILED"
+
+export interface ResearchDocumentDto {
+  id: string
+  meetingId: string
+  fileName: string
+  mediaType: string
+  sizeBytes: number
+  sha256: string
+  status: DocumentStatus
+  createdAt: string
+  processedAt: string | null
+  errorMessage: string | null
+}
+
 export interface ResearchNoteDto {
   id: string
   meetingId: string

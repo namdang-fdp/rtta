@@ -9,4 +9,6 @@ public interface ResearchAiProvider {
 	AiTextResult summarizeMeeting(AiPromptRequest request);
 
 	List<Float> embed(String text);
+
+	List<List<Float>> embedAll(List<String> texts);
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import {
-  AlertCircle, Bookmark, CalendarCheck, Clock3, FileText, Languages,
+  AlertCircle, Bookmark, BookOpenText, CalendarCheck, Clock3, FileText, Languages,
   LoaderCircle, NotebookPen, PlayCircle, Sparkles,
 } from "lucide-react"
 
@@ -54,6 +54,7 @@ export function CompletedMeetingOverview({ meetingId }: { meetingId?: string }) 
             )}
             <Button asChild variant="outline"><Link href={`/meetings/${id}/transcript`}><FileText />Full transcript</Link></Button>
             <Button asChild variant="ghost"><Link href={`/meetings/${id}/notes`}><NotebookPen />Research notes</Link></Button>
+            <Button asChild variant="ghost"><Link href={`/meetings/${id}/context`}><BookOpenText />Research context</Link></Button>
           </div>
         </header>
 

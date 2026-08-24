@@ -7,6 +7,10 @@ spring:
     url: jdbc:postgresql://${RTTA_DB_HOST:localhost}:${RTTA_DB_PORT:5432}/${RTTA_DB_NAME:rtta}
     username: ${RTTA_DB_USER:rtta}
     password: ${RTTA_DB_PASSWORD:}
+  servlet:
+    multipart:
+      max-file-size: ${RTTA_DOCUMENT_MAX_FILE_SIZE:50MB}
+      max-request-size: ${RTTA_DOCUMENT_MAX_FILE_SIZE:50MB}
   flyway:
     enabled: true
   jpa:
@@ -44,6 +48,13 @@ rtta:
       presigned-url-duration: ${RTTA_MINIO_PRESIGNED_URL_DURATION:15m}
   recording:
     temp-directory: ${RTTA_RECORDING_TEMP_DIRECTORY:${java.io.tmpdir}/rtta-recordings}
+  documents:
+    max-size-bytes: ${RTTA_DOCUMENT_MAX_SIZE_BYTES:52428800}
+    temp-directory: ${RTTA_DOCUMENT_TEMP_DIRECTORY:${java.io.tmpdir}/rtta-documents}
+    chunk-size: ${RTTA_DOCUMENT_CHUNK_SIZE:1200}
+    chunk-overlap: ${RTTA_DOCUMENT_CHUNK_OVERLAP:150}
+    max-chunks: ${RTTA_DOCUMENT_MAX_CHUNKS:500}
+    embedding-batch-size: ${RTTA_EMBEDDING_BATCH_SIZE:20}
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY:}

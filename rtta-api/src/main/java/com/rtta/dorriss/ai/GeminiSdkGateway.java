@@ -49,13 +49,22 @@ class GeminiSdkGateway implements GeminiGateway {
 
 	@Override
 	public List<Float> embed(String model, String text) {
+		return embedAll(model, List.of(text)).getFirst();
+	}
+
+	@Override
+	public List<List<Float>> embedAll(String model, List<String> texts) {
 		try {
-			return client().models.embedContent(model, text, null)
+			List<List<Float>> embeddings = client().models.embedContent(model, texts, null)
 					.embeddings()
-					.flatMap(embeddings -> embeddings.stream().findFirst())
-					.flatMap(embedding -> embedding.values())
-					.map(List::copyOf)
+					.map(values -> values.stream()
+							.map(value -> value.values()
+									.map(List::copyOf)
+									.orElseThrow(() -> new AiProviderException("Gemini returned an empty embedding")))
+							.toList())
 					.orElseThrow(() -> new AiProviderException("Gemini returned no embedding"));
+			if (embeddings.size() != texts.size()) throw new AiProviderException("Gemini returned an incomplete embedding batch");
+			return embeddings;
 		}
 		catch (AiProviderException exception) {
 			throw exception;
