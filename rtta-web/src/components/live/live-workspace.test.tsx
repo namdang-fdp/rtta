@@ -36,10 +36,14 @@ describe("LiveWorkspaceView", () => {
       connectionState: "connected",
       sessionState: "live",
       activeSessionId: "current-session",
+      activeMeetingId: "current-meeting",
+      lastMeetingId: "current-meeting",
       sessionStartedAt: new Date().toISOString(),
       recentFinals: [{
         id: "final-1",
         sessionId: "current-session",
+        meetingId: "current-meeting",
+        utteranceId: "final-1",
         sourceText: "Pulsars are rapidly rotating neutron stars.",
         translatedText: "Pulsar là những sao neutron quay cực nhanh.",
         offsetMs: 1_230,
@@ -49,6 +53,8 @@ describe("LiveWorkspaceView", () => {
       currentPartial: {
         id: "partial-2",
         sessionId: "current-session",
+        meetingId: "current-meeting",
+        utteranceId: null,
         sourceText: "They emit beams",
         translatedText: "Chúng phát ra các chùm",
         offsetMs: 2_000,

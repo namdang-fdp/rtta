@@ -6,5 +6,6 @@ public record LiveSessionStateEvent(
 		String type,
 		LiveSessionStatus state,
 		String sessionId,
+		String meetingId,
 		Instant startedAt) {
 }

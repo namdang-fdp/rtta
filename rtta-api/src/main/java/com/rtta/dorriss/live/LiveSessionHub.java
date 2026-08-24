@@ -7,13 +7,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.rtta.dorriss.audio.api.TranslationWireEvent;
 import com.rtta.dorriss.audio.api.TranslationWireEventType;
 import com.rtta.dorriss.live.api.LiveErrorEvent;
 import com.rtta.dorriss.live.api.LiveSessionStartedEvent;
 import com.rtta.dorriss.live.api.LiveSessionStateEvent;
 import com.rtta.dorriss.live.api.LiveSessionStatus;
 import com.rtta.dorriss.live.api.LiveSessionStoppedEvent;
+import com.rtta.dorriss.live.api.LiveTranslationEvent;
 import com.rtta.dorriss.translation.TranslationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,24 +65,27 @@ public final class LiveSessionHub {
 		}
 	}
 
-	public void sessionStarted(UUID sessionId, Instant startedAt) {
+	public void sessionStarted(UUID sessionId, UUID meetingId, Instant startedAt) {
 		synchronized (lifecycleMonitor) {
-			activeSession = new ActiveSession(sessionId, startedAt);
+			activeSession = new ActiveSession(sessionId, meetingId, startedAt);
 			broadcastLocked(new LiveSessionStartedEvent(
 					"SESSION_STARTED",
 					sessionId.toString(),
+					idText(meetingId),
 					startedAt));
 		}
 	}
 
-	public void publishTranslation(UUID sessionId, TranslationEvent event) {
+	public void publishTranslation(UUID sessionId, TranslationEvent event, UUID utteranceId) {
 		synchronized (lifecycleMonitor) {
 			if (!isCurrentSession(sessionId)) {
 				return;
 			}
-			broadcastLocked(new TranslationWireEvent(
+			broadcastLocked(new LiveTranslationEvent(
 					"TRANSLATION",
 					sessionId.toString(),
+					idText(activeSession.meetingId()),
+					idText(utteranceId),
 					TranslationWireEventType.valueOf(event.type().name()),
 					event.sourceText(),
 					event.translatedText(),
@@ -97,10 +100,12 @@ public final class LiveSessionHub {
 			if (!isCurrentSession(sessionId)) {
 				return;
 			}
+			ActiveSession previous = activeSession;
 			activeSession = null;
 			broadcastLocked(new LiveSessionStoppedEvent(
 					"SESSION_STOPPED",
 					sessionId.toString(),
+					idText(previous.meetingId()),
 					stoppedAt));
 		}
 	}
@@ -130,12 +135,13 @@ public final class LiveSessionHub {
 
 	private LiveSessionStateEvent currentStateEvent() {
 		if (activeSession == null) {
-			return new LiveSessionStateEvent("SESSION_STATE", LiveSessionStatus.IDLE, null, null);
+			return new LiveSessionStateEvent("SESSION_STATE", LiveSessionStatus.IDLE, null, null, null);
 		}
 		return new LiveSessionStateEvent(
 				"SESSION_STATE",
 				LiveSessionStatus.LIVE,
 				activeSession.sessionId().toString(),
+				idText(activeSession.meetingId()),
 				activeSession.startedAt());
 	}
 
@@ -199,7 +205,11 @@ public final class LiveSessionHub {
 		}
 	}
 
-	private record ActiveSession(UUID sessionId, Instant startedAt) {
+	private String idText(UUID id) {
+		return id == null ? null : id.toString();
+	}
+
+	private record ActiveSession(UUID sessionId, UUID meetingId, Instant startedAt) {
 	}
 
 	private static final class LiveSubscriber {

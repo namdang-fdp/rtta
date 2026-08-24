@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.rtta.dorriss.live.LiveSessionHub;
+import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -35,7 +36,8 @@ class AudioWebSocketHandlerTests {
 				new AudioControlProtocol(new ObjectMapper()),
 				provider,
 				new TranslationWireProtocol(new ObjectMapper()),
-				new LiveSessionHub(new ObjectMapper()));
+				new LiveSessionHub(new ObjectMapper()),
+				mock(RealtimeMeetingCoordinator.class));
 		WebSocketSession socket = mock(WebSocketSession.class);
 		AtomicInteger sendCount = new AtomicInteger();
 		UUID sessionId = UUID.randomUUID();

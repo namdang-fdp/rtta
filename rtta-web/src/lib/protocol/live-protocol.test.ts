@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { parseLiveServerEvent } from "@/lib/protocol/live-protocol"
 
 const sessionId = "2b9c9ee0-1511-49d2-a779-d81cf7f7b441"
+const meetingId = "3b9c9ee0-1511-49d2-a779-d81cf7f7b442"
 
 describe("parseLiveServerEvent", () => {
   it("parses an active SESSION_STATE snapshot", () => {
@@ -10,11 +11,13 @@ describe("parseLiveServerEvent", () => {
       type: "SESSION_STATE",
       state: "LIVE",
       sessionId,
+      meetingId,
       startedAt: "2026-08-25T00:00:00Z",
     }))).toEqual({
       type: "SESSION_STATE",
       state: "LIVE",
       sessionId,
+      meetingId,
       startedAt: "2026-08-25T00:00:00Z",
     })
   })
@@ -23,10 +26,12 @@ describe("parseLiveServerEvent", () => {
     expect(parseLiveServerEvent(JSON.stringify({
       type: "SESSION_STARTED",
       sessionId,
+      meetingId,
       startedAt: "2026-08-25T00:00:00Z",
     }))).toEqual({
       type: "SESSION_STARTED",
       sessionId,
+      meetingId,
       startedAt: "2026-08-25T00:00:00Z",
     })
   })
@@ -35,6 +40,8 @@ describe("parseLiveServerEvent", () => {
     expect(parseLiveServerEvent(JSON.stringify({
       type: "TRANSLATION",
       sessionId,
+      meetingId,
+      utteranceId: null,
       eventType: "PARTIAL",
       sourceText: "Pulsars are",
       translatedText: "Pulsar là",
@@ -48,6 +55,8 @@ describe("parseLiveServerEvent", () => {
     expect(parseLiveServerEvent({
       type: "TRANSLATION",
       sessionId,
+      meetingId,
+      utteranceId: "4b9c9ee0-1511-49d2-a779-d81cf7f7b443",
       eventType: "FINAL",
       sourceText: "Pulsars are rapidly rotating neutron stars.",
       translatedText: "Pulsar là các sao neutron quay nhanh.",
@@ -61,18 +70,20 @@ describe("parseLiveServerEvent", () => {
     expect(parseLiveServerEvent(JSON.stringify({
       type: "SESSION_STOPPED",
       sessionId,
+      meetingId,
       stoppedAt: "2026-08-25T00:45:00Z",
     }))).toEqual({
       type: "SESSION_STOPPED",
       sessionId,
+      meetingId,
       stoppedAt: "2026-08-25T00:45:00Z",
     })
   })
 
   it.each([
     "not-json",
-    JSON.stringify({ type: "TRANSLATION", sessionId, eventType: "PARTIAL" }),
-    JSON.stringify({ type: "SESSION_STARTED", sessionId, startedAt: "not-a-date" }),
+    JSON.stringify({ type: "TRANSLATION", sessionId, meetingId, utteranceId: null, eventType: "PARTIAL" }),
+    JSON.stringify({ type: "SESSION_STARTED", sessionId, meetingId, startedAt: "not-a-date" }),
   ])("rejects malformed events", (payload) => {
     expect(parseLiveServerEvent(payload)).toBeNull()
   })

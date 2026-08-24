@@ -4,7 +4,7 @@ import { TranscriptPage } from "@/components/transcript/transcript-page"
 
 export const metadata: Metadata = {
   title: "Transcript · RTTA Web",
-  description: "Future transcript workspace for English to Vietnamese research meetings.",
+  description: "Browse persisted English-to-Vietnamese research meeting transcripts.",
 }
 
 export default function TranscriptRoute() {

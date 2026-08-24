@@ -30,11 +30,14 @@ function isNonNegativeNumber(value: unknown): value is number {
 function parseSessionState(value: Record<string, unknown>): SessionStateEvent | null {
   if (value.state !== "IDLE" && value.state !== "LIVE") return null
   if (!isNullableString(value.sessionId)) return null
+  if (!isNullableString(value.meetingId)) return null
   if (value.startedAt !== null && !isIsoDate(value.startedAt)) return null
   if (value.state === "LIVE" && (!isNonEmptyString(value.sessionId) || !isIsoDate(value.startedAt))) {
     return null
   }
-  if (value.state === "IDLE" && (value.sessionId !== null || value.startedAt !== null)) {
+  if (value.state === "IDLE" && (
+    value.sessionId !== null || value.meetingId !== null || value.startedAt !== null
+  )) {
     return null
   }
 
@@ -42,21 +45,25 @@ function parseSessionState(value: Record<string, unknown>): SessionStateEvent | 
     type: "SESSION_STATE",
     state: value.state,
     sessionId: value.sessionId,
+    meetingId: value.meetingId,
     startedAt: value.startedAt,
   }
 }
 
 function parseSessionStarted(value: Record<string, unknown>): SessionStartedEvent | null {
   if (!isNonEmptyString(value.sessionId) || !isIsoDate(value.startedAt)) return null
+  if (!isNullableString(value.meetingId)) return null
   return {
     type: "SESSION_STARTED",
     sessionId: value.sessionId,
+    meetingId: value.meetingId,
     startedAt: value.startedAt,
   }
 }
 
 function parseTranslation(value: Record<string, unknown>): TranslationServerEvent | null {
   if (!isNonEmptyString(value.sessionId)) return null
+  if (!isNullableString(value.meetingId) || !isNullableString(value.utteranceId)) return null
   if (value.eventType !== "PARTIAL" && value.eventType !== "FINAL") return null
   if (typeof value.sourceText !== "string" || typeof value.translatedText !== "string") return null
   if (!value.sourceText.trim() && !value.translatedText.trim()) return null
@@ -66,6 +73,8 @@ function parseTranslation(value: Record<string, unknown>): TranslationServerEven
   return {
     type: "TRANSLATION",
     sessionId: value.sessionId,
+    meetingId: value.meetingId,
+    utteranceId: value.utteranceId,
     eventType: value.eventType,
     sourceText: value.sourceText,
     translatedText: value.translatedText,
@@ -77,9 +86,11 @@ function parseTranslation(value: Record<string, unknown>): TranslationServerEven
 
 function parseSessionStopped(value: Record<string, unknown>): SessionStoppedEvent | null {
   if (!isNonEmptyString(value.sessionId) || !isIsoDate(value.stoppedAt)) return null
+  if (!isNullableString(value.meetingId)) return null
   return {
     type: "SESSION_STOPPED",
     sessionId: value.sessionId,
+    meetingId: value.meetingId,
     stoppedAt: value.stoppedAt,
   }
 }

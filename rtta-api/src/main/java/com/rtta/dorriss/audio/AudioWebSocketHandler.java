@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.rtta.dorriss.live.LiveSessionHub;
+import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
+import com.rtta.dorriss.transcript.TranscriptUtterance;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationProvider;
 import com.rtta.dorriss.translation.TranslationSession;
@@ -36,6 +38,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private final TranslationProvider translationProvider;
 	private final TranslationWireProtocol translationWireProtocol;
 	private final LiveSessionHub liveSessionHub;
+	private final RealtimeMeetingCoordinator meetingCoordinator;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
 	private final Map<String, SerializedOutboundWebSocket> outboundConnections =
 			new ConcurrentHashMap<>();
@@ -44,11 +47,13 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			AudioControlProtocol controlProtocol,
 			TranslationProvider translationProvider,
 			TranslationWireProtocol translationWireProtocol,
-			LiveSessionHub liveSessionHub) {
+			LiveSessionHub liveSessionHub,
+			RealtimeMeetingCoordinator meetingCoordinator) {
 		this.controlProtocol = controlProtocol;
 		this.translationProvider = translationProvider;
 		this.translationWireProtocol = translationWireProtocol;
 		this.liveSessionHub = liveSessionHub;
+		this.meetingCoordinator = meetingCoordinator;
 	}
 
 	int activeSessionCount() {
@@ -198,8 +203,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		if (!newSession.attachTranslation(translationSession)) {
 			return;
 		}
+		UUID meetingId = meetingCoordinator.start(command.sessionId(), startedAt);
+		newSession.attachMeeting(meetingId);
 		if (!newSession.announceLive(() -> liveSessionHub.sessionStarted(
-				command.sessionId(), startedAt))) {
+				command.sessionId(), meetingId, startedAt))) {
 			return;
 		}
 
@@ -270,7 +277,12 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		}
 		finally {
 			if (resources.liveAnnounced()) {
-				liveSessionHub.sessionStopped(session.command().sessionId(), Instant.now());
+				Instant stoppedAt = Instant.now();
+				meetingCoordinator.stop(
+						session.command().sessionId(),
+						stoppedAt,
+						"normal-stop".equals(reason));
+				liveSessionHub.sessionStopped(session.command().sessionId(), stoppedAt);
 			}
 		}
 	}
@@ -283,7 +295,11 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		if (activeSessions.get(socket.getId()) != session) {
 			return;
 		}
-		liveSessionHub.publishTranslation(session.command().sessionId(), event);
+		UUID utteranceId = meetingCoordinator
+				.persistTranslation(session.command().sessionId(), event)
+				.map(TranscriptUtterance::getId)
+				.orElse(null);
+		liveSessionHub.publishTranslation(session.command().sessionId(), event, utteranceId);
 
 		String payload;
 		try {
@@ -427,6 +443,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		private final Instant startedAt;
 
 		private TranslationSession translationSession;
+		private UUID meetingId;
 		private boolean closed;
 		private boolean acceptingAudio;
 
@@ -459,6 +476,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			translationSession = session;
 			acceptingAudio = true;
 			return true;
+		}
+
+		private synchronized void attachMeeting(UUID meetingId) {
+			this.meetingId = meetingId;
 		}
 
 		private synchronized boolean beginClosing() {

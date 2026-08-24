@@ -17,6 +17,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import com.rtta.dorriss.PostgresIntegrationTestSupport;
+import com.rtta.dorriss.meeting.Meeting;
+import com.rtta.dorriss.meeting.MeetingRepository;
+import com.rtta.dorriss.meeting.MeetingStatus;
+import com.rtta.dorriss.transcript.TranscriptUtteranceRepository;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -48,6 +52,12 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	@Autowired
 	private FakeTranslationProvider translationProvider;
 
+	@Autowired
+	private MeetingRepository meetingRepository;
+
+	@Autowired
+	private TranscriptUtteranceRepository utteranceRepository;
+
 	@BeforeEach
 	void reset() {
 		await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
@@ -66,12 +76,14 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 		UUID sessionId = UUID.randomUUID();
 
 		assertThat(liveListener.nextText())
-				.isEqualTo("{\"type\":\"SESSION_STATE\",\"state\":\"IDLE\",\"sessionId\":null,\"startedAt\":null}");
+				.isEqualTo("{\"type\":\"SESSION_STATE\",\"state\":\"IDLE\",\"sessionId\":null,\"meetingId\":null,\"startedAt\":null}");
 		audioSocket.sendText(startMessage(sessionId), true).join();
 		assertThat(audioListener.nextText()).isEqualTo("STARTED");
+		Meeting meeting = meetingRepository.findByLiveSessionId(sessionId).orElseThrow();
 		assertThat(liveListener.nextText())
 				.contains("\"type\":\"SESSION_STARTED\"")
-				.contains("\"sessionId\":\"" + sessionId + "\"");
+				.contains("\"sessionId\":\"" + sessionId + "\"")
+				.contains("\"meetingId\":\"" + meeting.getId() + "\"");
 
 		translationProvider.latestSession().emit(translation(
 				TranslationEventType.PARTIAL,
@@ -82,7 +94,9 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 		assertThat(liveListener.nextText())
 				.contains("\"type\":\"TRANSLATION\"")
 				.contains("\"eventType\":\"PARTIAL\"")
+				.contains("\"utteranceId\":null")
 				.contains("\"translatedText\":\"Pulsar là\"");
+		assertThat(utteranceRepository.countByMeetingId(meeting.getId())).isZero();
 
 		translationProvider.latestSession().emit(translation(
 				TranslationEventType.FINAL,
@@ -90,9 +104,15 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 				"Pulsar là các sao neutron quay nhanh.",
 				2_760));
 		assertThat(audioListener.nextText()).contains("\"eventType\":\"FINAL\"");
-		assertThat(liveListener.nextText())
+		String finalPayload = liveListener.nextText();
+		assertThat(finalPayload)
 				.contains("\"eventType\":\"FINAL\"")
 				.contains("\"translatedText\":\"Pulsar là các sao neutron quay nhanh.\"");
+		var persisted = utteranceRepository.findAll().stream()
+				.filter(utterance -> utterance.getMeetingId().equals(meeting.getId()))
+				.findFirst()
+				.orElseThrow();
+		assertThat(finalPayload).contains("\"utteranceId\":\"" + persisted.getId() + "\"");
 
 		audioSocket.sendText(stopMessage(sessionId), true).join();
 		assertThat(audioListener.nextText()).isEqualTo("STOPPED");
@@ -100,6 +120,8 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 				.contains("\"type\":\"SESSION_STOPPED\"")
 				.contains("\"sessionId\":\"" + sessionId + "\"");
 		assertThat(translationProvider.latestSession().closed()).isTrue();
+		assertThat(meetingRepository.findById(meeting.getId()).orElseThrow().getStatus())
+				.isEqualTo(MeetingStatus.COMPLETED);
 
 		liveSocket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
 		audioSocket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();

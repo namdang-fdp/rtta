@@ -47,8 +47,8 @@ class LiveSessionHubTests {
 		hub.subscribe(healthy);
 		hub.subscribe(failed);
 		UUID sessionId = UUID.randomUUID();
-		hub.sessionStarted(sessionId, Instant.parse("2026-08-25T00:00:00Z"));
-		hub.publishTranslation(sessionId, translation(0));
+		hub.sessionStarted(sessionId, UUID.randomUUID(), Instant.parse("2026-08-25T00:00:00Z"));
+		hub.publishTranslation(sessionId, translation(0), UUID.randomUUID());
 
 		assertThat(hub.subscriberCount()).isEqualTo(1);
 		assertThat(hub.activeSessionId()).isEqualTo(sessionId);
@@ -79,7 +79,7 @@ class LiveSessionHubTests {
 
 		hub.subscribe(socket);
 		UUID sessionId = UUID.randomUUID();
-		hub.sessionStarted(sessionId, Instant.parse("2026-08-25T00:00:00Z"));
+		hub.sessionStarted(sessionId, UUID.randomUUID(), Instant.parse("2026-08-25T00:00:00Z"));
 		int eventCount = 40;
 		CountDownLatch start = new CountDownLatch(1);
 		CountDownLatch complete = new CountDownLatch(eventCount);
@@ -90,7 +90,7 @@ class LiveSessionHubTests {
 				executor.execute(() -> {
 					try {
 						start.await();
-						hub.publishTranslation(sessionId, translation(eventIndex));
+						hub.publishTranslation(sessionId, translation(eventIndex), UUID.randomUUID());
 					}
 					catch (InterruptedException exception) {
 						Thread.currentThread().interrupt();

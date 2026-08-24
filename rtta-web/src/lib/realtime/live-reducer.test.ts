@@ -15,6 +15,7 @@ function startedState(): LiveMeetingState {
     event: {
       type: "SESSION_STARTED",
       sessionId,
+      meetingId: "meeting-current",
       startedAt: "2026-08-25T00:00:00Z",
     },
   })
@@ -30,6 +31,8 @@ function translation(
   return {
     type: "TRANSLATION",
     sessionId: eventSessionId,
+    meetingId: "meeting-current",
+    utteranceId: eventType === "FINAL" ? `utterance-${offsetMs}` : null,
     eventType,
     sourceText,
     translatedText,
@@ -51,12 +54,14 @@ describe("liveMeetingReducer", () => {
         type: "SESSION_STATE",
         state: "LIVE",
         sessionId,
+        meetingId: "meeting-current",
         startedAt: "2026-08-25T00:00:00Z",
       },
     })
 
     expect(state.sessionState).toBe("live")
     expect(state.activeSessionId).toBe(sessionId)
+    expect(state.activeMeetingId).toBe("meeting-current")
     expect(state.sessionStartedAt).toBe("2026-08-25T00:00:00Z")
   })
 
@@ -99,12 +104,14 @@ describe("liveMeetingReducer", () => {
       event: {
         type: "SESSION_STOPPED",
         sessionId,
+        meetingId: "meeting-current",
         stoppedAt: "2026-08-25T00:45:00Z",
       },
     })
 
     expect(stopped.sessionState).toBe("stopped")
     expect(stopped.activeSessionId).toBeNull()
+    expect(stopped.lastMeetingId).toBe("meeting-current")
     expect(stopped.currentPartial).toBeNull()
   })
 

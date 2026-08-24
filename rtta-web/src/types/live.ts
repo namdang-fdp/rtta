@@ -12,18 +12,22 @@ export interface SessionStateEvent {
   type: "SESSION_STATE"
   state: "IDLE" | "LIVE"
   sessionId: string | null
+  meetingId: string | null
   startedAt: string | null
 }
 
 export interface SessionStartedEvent {
   type: "SESSION_STARTED"
   sessionId: string
+  meetingId: string | null
   startedAt: string
 }
 
 export interface TranslationServerEvent {
   type: "TRANSLATION"
   sessionId: string
+  meetingId: string | null
+  utteranceId: string | null
   eventType: TranslationEventType
   sourceText: string
   translatedText: string
@@ -35,6 +39,7 @@ export interface TranslationServerEvent {
 export interface SessionStoppedEvent {
   type: "SESSION_STOPPED"
   sessionId: string
+  meetingId: string | null
   stoppedAt: string
 }
 
@@ -55,6 +60,8 @@ export type LiveServerEvent =
 export interface TranslationUtterance {
   id: string
   sessionId: string
+  meetingId: string | null
+  utteranceId: string | null
   sourceText: string
   translatedText: string
   offsetMs: number
@@ -66,6 +73,8 @@ export interface LiveMeetingState {
   connectionState: ConnectionState
   sessionState: MeetingSessionState
   activeSessionId: string | null
+  activeMeetingId: string | null
+  lastMeetingId: string | null
   sessionStartedAt: string | null
   currentPartial: TranslationUtterance | null
   recentFinals: TranslationUtterance[]
