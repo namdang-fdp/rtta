@@ -58,3 +58,25 @@ export interface ResearchNoteDto {
   createdAt: string
   updatedAt: string
 }
+
+export type ExplanationDepth = "QUICK" | "DEEP"
+
+export interface AiExplanationDto {
+  id: string | null
+  meetingId: string
+  utteranceId: string
+  selectedText: string
+  userQuestion: string | null
+  requestedDepth: ExplanationDepth
+  effectiveDepth: ExplanationDepth
+  deepModelFallback: boolean
+  model: string
+  responseMarkdown: string
+  citations: Array<Record<string, unknown>>
+  contextWindow: {
+    previousUtterances: number
+    followingUtterances: number
+    documentChunks: number
+  }
+  createdAt: string
+}

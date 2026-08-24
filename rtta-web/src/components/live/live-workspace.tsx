@@ -15,7 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { useLiveMeeting } from "@/hooks/use-live-meeting"
-import { useLocalMeetingActions } from "@/hooks/use-local-meeting-actions"
+import { useConceptExplanation } from "@/hooks/use-concept-explanation"
 import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { useMeetingNotes } from "@/hooks/use-meeting-notes"
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -24,7 +24,7 @@ import type { LiveMeetingState, TranslationUtterance } from "@/types/live"
 
 export function LiveWorkspace() {
   const { setFollowLive, clearError, ...state } = useLiveMeeting()
-  const actions = useLocalMeetingActions()
+  const explanation = useConceptExplanation()
   const bookmarks = useMeetingBookmarks(state.activeMeetingId)
   const notes = useMeetingNotes(state.activeMeetingId)
   const useDockedConceptPanel = useMediaQuery("(min-width: 1320px)")
@@ -55,10 +55,21 @@ export function LiveWorkspace() {
             })
           }
         }}
-        onExplain={actions.openExplanation}
-        explanationOpen={Boolean(actions.explanationTarget)}
+        onExplain={(utterance) => {
+          if (state.activeMeetingId && utterance.utteranceId) {
+            explanation.open({
+              meetingId: state.activeMeetingId,
+              utteranceId: utterance.utteranceId,
+              sourceText: utterance.sourceText,
+              translatedText: utterance.translatedText,
+              offsetMs: utterance.offsetMs,
+            })
+          }
+        }}
+        explanationOpen={Boolean(explanation.target)}
         dockExplanation={useDockedConceptPanel}
-        closeExplanation={actions.closeExplanation}
+        closeExplanation={explanation.close}
+        explanationController={explanation}
         bookmarkError={bookmarks.error ?? notes.error}
         clearBookmarkError={() => {
           bookmarks.clearError()
@@ -92,6 +103,7 @@ interface LiveWorkspaceViewProps {
   explanationOpen: boolean
   dockExplanation: boolean
   closeExplanation: () => void
+  explanationController: ReturnType<typeof useConceptExplanation>
   bookmarkError: string | null
   clearBookmarkError: () => void
 }
@@ -110,6 +122,7 @@ export function LiveWorkspaceView({
   explanationOpen,
   dockExplanation,
   closeExplanation,
+  explanationController,
   bookmarkError,
   clearBookmarkError,
 }: LiveWorkspaceViewProps) {
@@ -181,7 +194,7 @@ export function LiveWorkspaceView({
 
       {explanationOpen && dockExplanation ? (
         <aside className="hidden h-full w-[400px] shrink-0 border-l min-[1320px]:block">
-          <ConceptExplanationPanel onClose={closeExplanation} compactHeader />
+          <ConceptExplanationPanel controller={explanationController} onClose={closeExplanation} compactHeader />
         </aside>
       ) : null}
 
@@ -194,9 +207,9 @@ export function LiveWorkspaceView({
           >
             <SheetHeader className="sr-only">
               <SheetTitle>Concept explanation</SheetTitle>
-              <SheetDescription>Demo research explanation for a selected term.</SheetDescription>
+              <SheetDescription>Contextual Vietnamese explanation for a selected scientific term.</SheetDescription>
             </SheetHeader>
-            <ConceptExplanationPanel onClose={closeExplanation} />
+            <ConceptExplanationPanel controller={explanationController} onClose={closeExplanation} />
           </SheetContent>
         </Sheet>
       ) : null}

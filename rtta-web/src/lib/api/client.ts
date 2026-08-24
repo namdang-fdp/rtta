@@ -27,7 +27,7 @@ export async function apiRequest<T>(
   if (!response.ok) {
     throw new ApiError(
       response.status >= 500
-        ? "RTTA could not reach the meeting archive. Please try again."
+        ? "RTTA could not complete that request. Please try again."
         : "The requested meeting data is unavailable.",
       response.status,
     )

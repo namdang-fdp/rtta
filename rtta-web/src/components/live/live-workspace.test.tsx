@@ -20,6 +20,19 @@ const actions = {
   closeExplanation: vi.fn(),
   bookmarkError: null,
   clearBookmarkError: vi.fn(),
+  explanationController: {
+    target: null,
+    selectedText: "",
+    setSelectedText: vi.fn(),
+    userQuestion: "",
+    setUserQuestion: vi.fn(),
+    response: null,
+    loading: false,
+    error: null,
+    open: vi.fn(),
+    close: vi.fn(),
+    generate: vi.fn(),
+  },
 }
 
 function renderState(state: LiveMeetingState) {

@@ -8,6 +8,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NoteComposerSheet } from "@/components/notes/note-composer-sheet"
+import { ConceptExplanationPanel } from "@/components/context/concept-explanation-panel"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { useConceptExplanation } from "@/hooks/use-concept-explanation"
 import { useTranscriptHistory } from "@/hooks/use-transcript-history"
 import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { useMeetingNotes } from "@/hooks/use-meeting-notes"
@@ -30,6 +39,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
   const history = useTranscriptHistory(meetingId, deferredQuery)
   const bookmarks = useMeetingBookmarks(history.resolvedMeetingId)
   const notes = useMeetingNotes(history.resolvedMeetingId)
+  const explanation = useConceptExplanation()
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
@@ -169,7 +179,19 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                       >
                         <NotebookPen />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" disabled aria-label="Concept explanations are coming soon">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={!history.resolvedMeetingId}
+                        aria-label="Explain a concept from this utterance"
+                        onClick={() => history.resolvedMeetingId && explanation.open({
+                          meetingId: history.resolvedMeetingId,
+                          utteranceId: utterance.id,
+                          sourceText: utterance.sourceText,
+                          translatedText: utterance.translatedText,
+                          offsetMs: utterance.offsetMs,
+                        })}
+                      >
                         <Sparkles />
                       </Button>
                     </div>
@@ -214,6 +236,16 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
         onClose={notes.close}
         onSave={(content) => void notes.saveTarget(content)}
       />
+
+      <Sheet open={Boolean(explanation.target)} onOpenChange={(open) => !open && explanation.close()}>
+        <SheetContent side="right" showCloseButton={false} className="w-[min(94vw,470px)] gap-0 p-0 sm:max-w-[470px]">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Concept explanation</SheetTitle>
+            <SheetDescription>Contextual Vietnamese explanation for a selected scientific term.</SheetDescription>
+          </SheetHeader>
+          <ConceptExplanationPanel controller={explanation} onClose={explanation.close} />
+        </SheetContent>
+      </Sheet>
     </section>
   )
 }

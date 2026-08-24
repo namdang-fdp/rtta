@@ -1,6 +1,7 @@
 package com.rtta.dorriss.transcript;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -30,6 +31,14 @@ public interface TranscriptUtteranceRepository extends JpaRepository<TranscriptU
 	Page<TranscriptUtterance> findAllByMeetingId(UUID meetingId, Pageable pageable);
 
 	Optional<TranscriptUtterance> findByIdAndMeetingId(UUID id, UUID meetingId);
+
+	List<TranscriptUtterance> findTop5ByMeetingIdAndOrdinalLessThanOrderByOrdinalDesc(
+			UUID meetingId,
+			long ordinal);
+
+	List<TranscriptUtterance> findTop2ByMeetingIdAndOrdinalGreaterThanOrderByOrdinalAsc(
+			UUID meetingId,
+			long ordinal);
 
 	long countByMeetingId(UUID meetingId);
 }

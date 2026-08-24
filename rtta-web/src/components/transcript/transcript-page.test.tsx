@@ -5,6 +5,7 @@ import { TranscriptPage } from "@/components/transcript/transcript-page"
 import { getMeeting, getTranscript, listMeetings } from "@/lib/api/meetings"
 import { createBookmark, deleteBookmark, listBookmarks } from "@/lib/api/bookmarks"
 import { createNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes"
+import { explainConcept } from "@/lib/api/ai"
 import type { MeetingDto, TranscriptUtteranceDto } from "@/types/api"
 
 vi.mock("@/lib/api/meetings", () => ({
@@ -25,6 +26,8 @@ vi.mock("@/lib/api/notes", () => ({
   listNotes: vi.fn(),
   updateNote: vi.fn(),
 }))
+
+vi.mock("@/lib/api/ai", () => ({ explainConcept: vi.fn() }))
 
 const meeting: MeetingDto = {
   id: "meeting-1",
@@ -65,6 +68,7 @@ describe("TranscriptPage", () => {
     vi.mocked(listNotes).mockReset()
     vi.mocked(updateNote).mockReset()
     vi.mocked(listNotes).mockResolvedValue([])
+    vi.mocked(explainConcept).mockReset()
     vi.mocked(listMeetings).mockResolvedValue({
       items: [meeting], page: 0, size: 1, totalItems: 1, totalPages: 1,
     })
@@ -72,6 +76,41 @@ describe("TranscriptPage", () => {
     vi.mocked(getTranscript).mockResolvedValue({
       items: [utterance], page: 0, size: 100, totalItems: 1, totalPages: 1,
     })
+  })
+
+  it("calls Gemini only after an explicit contextual Explain action", async () => {
+    vi.mocked(explainConcept).mockResolvedValue({
+      id: "explanation-1",
+      meetingId: meeting.id,
+      utteranceId: utterance.id,
+      selectedText: "Hamiltonian",
+      userQuestion: null,
+      requestedDepth: "QUICK",
+      effectiveDepth: "QUICK",
+      deepModelFallback: false,
+      model: "gemini-test-flash",
+      responseMarkdown: "## Giải thích ngắn\nHamiltonian biểu diễn năng lượng của hệ.",
+      citations: [],
+      contextWindow: { previousUtterances: 3, followingUtterances: 1, documentChunks: 0 },
+      createdAt: "2026-08-25T00:01:06Z",
+    })
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Explain a concept from this utterance" }))
+    expect(explainConcept).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByRole("textbox", { name: "Concept or selected phrase" }), {
+      target: { value: "Hamiltonian" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Explain" }))
+
+    await waitFor(() => expect(explainConcept).toHaveBeenCalledWith(meeting.id, {
+      utteranceId: utterance.id,
+      selectedText: "Hamiltonian",
+      userQuestion: undefined,
+      depth: "QUICK",
+    }))
+    expect(await screen.findByText("Hamiltonian biểu diễn năng lượng của hệ.")).toBeInTheDocument()
+    expect(screen.getByText(/Context: 3 before/)).toBeInTheDocument()
   })
 
   it("restores linked notes and their translated context after a fresh render", async () => {

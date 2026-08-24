@@ -27,6 +27,12 @@ logging:
     com.rtta.dorriss.translation: INFO
 
 rtta:
+  ai:
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-3.7-flash}
+      deep-model: ${GEMINI_DEEP_MODEL:}
+      embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
   translation:
     provider: ${RTTA_TRANSLATION_PROVIDER:azure}
     source-language: ${SPEECH_SOURCE_LANGUAGE:en-US}

@@ -189,7 +189,8 @@ function FinalUtterance({
           variant="ghost"
           size="icon-sm"
           onClick={onExplain}
-          aria-label="Open demo concept explanation"
+          disabled={!utterance.utteranceId}
+          aria-label="Explain a concept from this utterance"
           className="text-muted-foreground"
         >
           <Brain />
