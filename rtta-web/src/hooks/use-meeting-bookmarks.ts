@@ -107,6 +107,8 @@ export function useMeetingBookmarks(meetingId: string | null) {
       utteranceId: target.id,
       offsetMs: target.offsetMs,
       label: null,
+      sourceText: null,
+      translatedText: null,
       createdAt: new Date().toISOString(),
       metadata: null,
     }
@@ -145,6 +147,7 @@ export function useMeetingBookmarks(meetingId: string | null) {
   }, [currentBookmarks, meetingId, pendingIds])
 
   return {
+    bookmarks: Object.values(currentBookmarks),
     bookmarkedIds,
     pendingIds,
     error: state.meetingId === meetingId ? state.error : null,

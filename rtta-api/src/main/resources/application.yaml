@@ -33,6 +33,8 @@ rtta:
       model: ${GEMINI_MODEL:gemini-3.7-flash}
       deep-model: ${GEMINI_DEEP_MODEL:}
       embedding-model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
+    summary:
+      chunk-character-budget: ${RTTA_SUMMARY_CHUNK_CHARACTER_BUDGET:60000}
   translation:
     provider: ${RTTA_TRANSLATION_PROVIDER:azure}
     source-language: ${SPEECH_SOURCE_LANGUAGE:en-US}

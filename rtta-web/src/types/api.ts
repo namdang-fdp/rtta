@@ -42,8 +42,19 @@ export interface BookmarkDto {
   utteranceId: string | null
   offsetMs: number | null
   label: string | null
+  sourceText: string | null
+  translatedText: string | null
   createdAt: string
   metadata: Record<string, unknown> | null
+}
+
+export interface MeetingSummaryDto {
+  id: string
+  meetingId: string
+  model: string
+  summaryMarkdown: string
+  structuredData: Record<string, unknown> | null
+  createdAt: string
 }
 
 export interface ResearchNoteDto {

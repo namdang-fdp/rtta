@@ -12,16 +12,20 @@ public record BookmarkResponse(
 		UUID utteranceId,
 		Long offsetMs,
 		String label,
+		String sourceText,
+		String translatedText,
 		Instant createdAt,
 		Map<String, Object> metadata) {
 
-	public static BookmarkResponse from(Bookmark bookmark) {
+	public static BookmarkResponse from(Bookmark bookmark, String sourceText, String translatedText) {
 		return new BookmarkResponse(
 				bookmark.getId(),
 				bookmark.getMeetingId(),
 				bookmark.getUtteranceId(),
 				bookmark.getOffsetMs(),
 				bookmark.getLabel(),
+				sourceText,
+				translatedText,
 				bookmark.getCreatedAt(),
 				bookmark.getMetadata());
 	}

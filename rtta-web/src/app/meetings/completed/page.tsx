@@ -4,7 +4,7 @@ import { CompletedMeetingOverview } from "@/components/meeting/completed-meeting
 
 export const metadata: Metadata = {
   title: "Completed Meeting · RTTA Web",
-  description: "Future completed-meeting research artifact for RTTA Web.",
+  description: "Latest persisted RTTA research meeting.",
 }
 
 export default function CompletedMeetingRoute() {

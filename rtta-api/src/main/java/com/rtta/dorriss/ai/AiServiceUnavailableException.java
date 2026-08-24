@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class AiServiceUnavailableException extends RuntimeException {
 
 	public AiServiceUnavailableException() {
-		super("RTTA could not generate the explanation right now. Please try again explicitly.");
+		super("RTTA AI could not complete this request right now. Please try again explicitly.");
 	}
 }

@@ -168,6 +168,8 @@ describe("TranscriptPage", () => {
       utteranceId: utterance.id,
       offsetMs: utterance.offsetMs,
       label: null,
+      sourceText: utterance.sourceText,
+      translatedText: utterance.translatedText,
       createdAt: "2026-08-25T00:01:05Z",
       metadata: null,
     }])
@@ -194,6 +196,8 @@ describe("TranscriptPage", () => {
       utteranceId: utterance.id,
       offsetMs: utterance.offsetMs,
       label: null,
+      sourceText: utterance.sourceText,
+      translatedText: utterance.translatedText,
       createdAt: "2026-08-25T00:01:05Z",
       metadata: null,
     })

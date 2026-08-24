@@ -1,6 +1,7 @@
 package com.rtta.dorriss.bookmark;
 
 import java.time.Clock;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,9 +49,12 @@ public class BookmarkService {
 	@Transactional(readOnly = true)
 	public List<BookmarkResponse> list(UUID meetingId) {
 		requireMeeting(meetingId);
+		Map<UUID, TranscriptUtterance> utterances = new LinkedHashMap<>();
+		utteranceRepository.findAllByMeetingIdOrderByOrdinalAsc(meetingId)
+				.forEach(utterance -> utterances.put(utterance.getId(), utterance));
 		return bookmarkRepository.findAllByMeetingIdOrderByOffsetMsAscCreatedAtAscIdAsc(meetingId)
 				.stream()
-				.map(BookmarkResponse::from)
+				.map(bookmark -> toResponse(bookmark, utterances.get(bookmark.getUtteranceId())))
 				.toList();
 	}
 
@@ -69,25 +73,25 @@ public class BookmarkService {
 					.orElseThrow(() -> new TranscriptNotFoundException(utteranceId));
 			long utteranceOffsetMs = utterance.getOffsetMs();
 			return bookmarkRepository.findByMeetingIdAndUtteranceId(meetingId, utteranceId)
-					.map(BookmarkResponse::from)
-					.orElseGet(() -> BookmarkResponse.from(bookmarkRepository.save(new Bookmark(
+					.map(bookmark -> toResponse(bookmark, utterance))
+					.orElseGet(() -> toResponse(bookmarkRepository.save(new Bookmark(
 							meetingId,
 							utteranceId,
 							utteranceOffsetMs,
 							request.label(),
 							clock.instant(),
-							Map.of()))));
+							Map.of())), utterance));
 		}
 		if (offsetMs == null || offsetMs < 0) {
 			throw badRequest("A non-negative offsetMs is required when utteranceId is absent");
 		}
-		return BookmarkResponse.from(bookmarkRepository.save(new Bookmark(
+		return toResponse(bookmarkRepository.save(new Bookmark(
 				meetingId,
 				null,
 				offsetMs,
 				request.label(),
 				clock.instant(),
-				Map.of())));
+				Map.of())), null);
 	}
 
 	@Transactional
@@ -102,6 +106,13 @@ public class BookmarkService {
 		if (!meetingRepository.existsById(meetingId)) {
 			throw new MeetingNotFoundException(meetingId);
 		}
+	}
+
+	private BookmarkResponse toResponse(Bookmark bookmark, TranscriptUtterance utterance) {
+		return BookmarkResponse.from(
+				bookmark,
+				utterance == null ? null : utterance.getSourceText(),
+				utterance == null ? null : utterance.getTranslatedText());
 	}
 
 	private ResponseStatusException badRequest(String reason) {

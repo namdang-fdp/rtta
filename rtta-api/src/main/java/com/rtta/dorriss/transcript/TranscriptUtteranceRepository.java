@@ -30,6 +30,8 @@ public interface TranscriptUtteranceRepository extends JpaRepository<TranscriptU
 
 	Page<TranscriptUtterance> findAllByMeetingId(UUID meetingId, Pageable pageable);
 
+	List<TranscriptUtterance> findAllByMeetingIdOrderByOrdinalAsc(UUID meetingId);
+
 	Optional<TranscriptUtterance> findByIdAndMeetingId(UUID id, UUID meetingId);
 
 	List<TranscriptUtterance> findTop5ByMeetingIdAndOrdinalLessThanOrderByOrdinalDesc(
