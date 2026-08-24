@@ -110,6 +110,18 @@ describe("LiveWorkspaceView", () => {
     expect(screen.getByRole("button", { name: "Stop meeting recording" })).toBeInTheDocument()
   })
 
+  it("links a stopped session to its persisted meeting workspace", () => {
+    renderState({
+      ...initialLiveMeetingState,
+      connectionState: "connected",
+      sessionState: "stopped",
+      lastMeetingId: "completed-meeting",
+    })
+
+    expect(screen.getByRole("link", { name: "Open completed meeting" }))
+      .toHaveAttribute("href", "/meetings/completed-meeting")
+  })
+
   it("renders a clear backend disconnected state", () => {
     renderState({ ...initialLiveMeetingState, connectionState: "disconnected" })
 

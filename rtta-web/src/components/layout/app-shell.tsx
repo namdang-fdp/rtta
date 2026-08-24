@@ -15,14 +15,31 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { href: "/", label: "Live", icon: AudioLines },
-  { href: "/transcript", label: "Transcript", icon: FileText },
-  { href: "/notes", label: "Notes", icon: NotebookPen },
-  { href: "/context", label: "Context", icon: BookOpenText },
+  { section: "live", href: "/", label: "Live", icon: AudioLines },
+  { section: "transcript", href: "/transcript", label: "Transcript", icon: FileText },
+  { section: "notes", href: "/notes", label: "Notes", icon: NotebookPen },
+  { section: "context", href: "/context", label: "Context", icon: BookOpenText },
 ] as const
+
+function resolveNavigation(pathname: string) {
+  const meetingMatch = pathname.match(/^\/meetings\/([^/]+)/)
+  const meetingBase = meetingMatch ? `/meetings/${meetingMatch[1]}` : null
+
+  return navigation.map((item) => {
+    const href = meetingBase && item.section !== "live"
+      ? `${meetingBase}/${item.section}`
+      : item.href
+    const active = item.section === "live"
+      ? pathname === "/"
+      : pathname === item.href || pathname === `${meetingBase}/${item.section}`
+
+    return { ...item, href, active }
+  })
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const resolvedNavigation = resolveNavigation(pathname)
 
   return (
     <div className="h-dvh min-h-[620px] overflow-hidden bg-background text-foreground">
@@ -47,12 +64,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="flex flex-1 flex-col gap-2" aria-label="Meeting workspace">
-            {navigation.map((item) => {
-              const active = item.href === "/"
-                ? pathname === "/"
-                : item.href === "/transcript"
-                  ? pathname.startsWith("/transcript") || pathname.startsWith("/meetings")
-                  : pathname.startsWith(item.href)
+            {resolvedNavigation.map((item) => {
+              const { active } = item
               const Icon = item.icon
 
               return (
@@ -106,12 +119,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-4 border-t bg-background/95 px-2 backdrop-blur-md sm:hidden" aria-label="Meeting workspace">
-        {navigation.map((item) => {
-          const active = item.href === "/"
-            ? pathname === "/"
-            : item.href === "/transcript"
-              ? pathname.startsWith("/transcript") || pathname.startsWith("/meetings")
-              : pathname.startsWith(item.href)
+        {resolvedNavigation.map((item) => {
+          const { active } = item
           const Icon = item.icon
           return (
             <Link

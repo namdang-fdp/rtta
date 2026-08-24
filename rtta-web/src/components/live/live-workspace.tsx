@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { CircleAlert, CircleStop, Clock3, LoaderCircle, Mic, PlugZap, RadioTower, WifiOff, X } from "lucide-react"
 
@@ -351,7 +352,13 @@ function ConnectionStateSurface({ state }: { state: LiveMeetingState }) {
         eyebrow="Meeting ended"
         title="Translation session complete"
         description="RTTA is ready to attach automatically when you begin the next meeting."
-      />
+      >
+        {state.lastMeetingId ? (
+          <Button asChild className="mt-6">
+            <Link href={`/meetings/${state.lastMeetingId}`}>Open completed meeting</Link>
+          </Button>
+        ) : null}
+      </CenteredState>
     )
   }
 
@@ -370,11 +377,13 @@ function CenteredState({
   eyebrow,
   title,
   description,
+  children,
 }: {
   icon: React.ReactNode
   eyebrow: string
   title: string
   description: string
+  children?: React.ReactNode
 }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-12">
@@ -385,6 +394,7 @@ function CenteredState({
         <p className="mb-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-primary">{eyebrow}</p>
         <h2 className="editorial-title text-[clamp(1.75rem,4vw,2.65rem)] font-bold">{title}</h2>
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">{description}</p>
+        {children}
       </div>
     </div>
   )
