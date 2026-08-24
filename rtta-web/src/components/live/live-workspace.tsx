@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { CircleAlert, Clock3, PlugZap, RadioTower, WifiOff, X } from "lucide-react"
 
 import { ConceptExplanationPanel } from "@/components/context/concept-explanation-panel"
@@ -17,6 +17,7 @@ import {
 import { useLiveMeeting } from "@/hooks/use-live-meeting"
 import { useLocalMeetingActions } from "@/hooks/use-local-meeting-actions"
 import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
+import { useMeetingNotes } from "@/hooks/use-meeting-notes"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { formatElapsed } from "@/lib/format"
 import type { LiveMeetingState, TranslationUtterance } from "@/types/live"
@@ -25,8 +26,8 @@ export function LiveWorkspace() {
   const { setFollowLive, clearError, ...state } = useLiveMeeting()
   const actions = useLocalMeetingActions()
   const bookmarks = useMeetingBookmarks(state.activeMeetingId)
+  const notes = useMeetingNotes(state.activeMeetingId)
   const useDockedConceptPanel = useMediaQuery("(min-width: 1320px)")
-  const notedIds = useMemo(() => new Set(Object.keys(actions.noteDrafts)), [actions.noteDrafts])
 
   return (
     <>
@@ -36,27 +37,42 @@ export function LiveWorkspace() {
         clearError={clearError}
         bookmarkedIds={bookmarks.bookmarkedIds}
         pendingBookmarkIds={bookmarks.pendingIds}
-        notedIds={notedIds}
+        notedIds={notes.notedIds}
+        notesSaving={notes.saving}
         onBookmark={(utterance) => {
           if (utterance.utteranceId) {
             void bookmarks.toggle({ id: utterance.utteranceId, offsetMs: utterance.offsetMs })
           }
         }}
-        onNote={actions.openNote}
+        onNote={(utterance) => {
+          if (state.activeMeetingId && utterance.utteranceId) {
+            notes.open({
+              meetingId: state.activeMeetingId,
+              utteranceId: utterance.utteranceId,
+              sourceText: utterance.sourceText,
+              translatedText: utterance.translatedText,
+              offsetMs: utterance.offsetMs,
+            })
+          }
+        }}
         onExplain={actions.openExplanation}
         explanationOpen={Boolean(actions.explanationTarget)}
         dockExplanation={useDockedConceptPanel}
         closeExplanation={actions.closeExplanation}
-        bookmarkError={bookmarks.error}
-        clearBookmarkError={bookmarks.clearError}
+        bookmarkError={bookmarks.error ?? notes.error}
+        clearBookmarkError={() => {
+          bookmarks.clearError()
+          notes.clearError()
+        }}
       />
 
       <NoteComposerSheet
-        key={actions.noteTarget?.id ?? "closed"}
-        target={actions.noteTarget}
-        initialDraft={actions.noteTarget ? actions.noteDrafts[actions.noteTarget.id] : ""}
-        onClose={actions.closeNote}
-        onSave={actions.saveLocalNote}
+        key={notes.target?.utteranceId ?? "closed"}
+        target={notes.target}
+        initialDraft={notes.target ? notes.noteByUtteranceId[notes.target.utteranceId]?.content : ""}
+        saving={notes.saving}
+        onClose={notes.close}
+        onSave={(content) => void notes.saveTarget(content)}
       />
     </>
   )
@@ -69,6 +85,7 @@ interface LiveWorkspaceViewProps {
   bookmarkedIds: Set<string>
   pendingBookmarkIds: Set<string>
   notedIds: Set<string>
+  notesSaving: boolean
   onBookmark: (utterance: TranslationUtterance) => void
   onNote: (utterance: TranslationUtterance) => void
   onExplain: (utterance: TranslationUtterance) => void
@@ -86,6 +103,7 @@ export function LiveWorkspaceView({
   bookmarkedIds,
   pendingBookmarkIds,
   notedIds,
+  notesSaving,
   onBookmark,
   onNote,
   onExplain,
@@ -151,6 +169,7 @@ export function LiveWorkspaceView({
             bookmarkedIds={bookmarkedIds}
             pendingBookmarkIds={pendingBookmarkIds}
             notedIds={notedIds}
+            notesSaving={notesSaving}
             onBookmark={onBookmark}
             onNote={onNote}
             onExplain={onExplain}

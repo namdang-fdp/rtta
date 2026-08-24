@@ -11,6 +11,7 @@ const actions = {
   bookmarkedIds: new Set<string>(),
   pendingBookmarkIds: new Set<string>(),
   notedIds: new Set<string>(),
+  notesSaving: false,
   onBookmark: vi.fn(),
   onNote: vi.fn(),
   onExplain: vi.fn(),

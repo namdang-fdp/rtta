@@ -7,8 +7,10 @@ import { AlertCircle, Bookmark, FileText, LoaderCircle, NotebookPen, Search, Spa
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { NoteComposerSheet } from "@/components/notes/note-composer-sheet"
 import { useTranscriptHistory } from "@/hooks/use-transcript-history"
 import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
+import { useMeetingNotes } from "@/hooks/use-meeting-notes"
 import { formatOffset } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -27,6 +29,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
   const deferredQuery = useDeferredValue(query.trim())
   const history = useTranscriptHistory(meetingId, deferredQuery)
   const bookmarks = useMeetingBookmarks(history.resolvedMeetingId)
+  const notes = useMeetingNotes(history.resolvedMeetingId)
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
@@ -84,6 +87,13 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
               <Button variant="ghost" size="sm" onClick={bookmarks.clearError}>Dismiss</Button>
             </div>
           ) : null}
+          {notes.error ? (
+            <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1">{notes.error}</span>
+              <Button variant="ghost" size="sm" onClick={notes.clearError}>Dismiss</Button>
+            </div>
+          ) : null}
           {history.loading ? (
             <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
               <LoaderCircle className="size-5 animate-spin text-primary" />
@@ -124,6 +134,12 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                         {utterance.sourceText}
                       </p>
                     </div>
+                    {notes.noteByUtteranceId[utterance.id] ? (
+                      <div className="flex items-start gap-2 rounded-lg bg-secondary/55 px-3 py-2.5 text-sm text-secondary-foreground">
+                        <NotebookPen className="mt-0.5 size-4 shrink-0" />
+                        <span>{notes.noteByUtteranceId[utterance.id].content}</span>
+                      </div>
+                    ) : null}
 
                     <div className="flex gap-1 sm:absolute sm:-right-1 sm:top-0 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
                       <Button
@@ -137,7 +153,20 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                       >
                         <Bookmark className={cn(bookmarks.bookmarkedIds.has(utterance.id) && "fill-current")} />
                       </Button>
-                      <Button variant="ghost" size="icon-sm" disabled aria-label="Research notes are coming next">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={!history.resolvedMeetingId || notes.saving}
+                        aria-label={notes.notedIds.has(utterance.id) ? "Edit research note" : "Add research note"}
+                        className={notes.notedIds.has(utterance.id) ? "bg-accent text-primary" : "text-muted-foreground"}
+                        onClick={() => history.resolvedMeetingId && notes.open({
+                          meetingId: history.resolvedMeetingId,
+                          utteranceId: utterance.id,
+                          sourceText: utterance.sourceText,
+                          translatedText: utterance.translatedText,
+                          offsetMs: utterance.offsetMs,
+                        })}
+                      >
                         <NotebookPen />
                       </Button>
                       <Button variant="ghost" size="icon-sm" disabled aria-label="Concept explanations are coming soon">
@@ -176,6 +205,15 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
           )}
         </div>
       </div>
+
+      <NoteComposerSheet
+        key={notes.target?.utteranceId ?? "closed"}
+        target={notes.target}
+        initialDraft={notes.target ? notes.noteByUtteranceId[notes.target.utteranceId]?.content : ""}
+        saving={notes.saving}
+        onClose={notes.close}
+        onSave={(content) => void notes.saveTarget(content)}
+      />
     </section>
   )
 }

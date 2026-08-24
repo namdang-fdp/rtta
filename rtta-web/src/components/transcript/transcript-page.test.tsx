@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { TranscriptPage } from "@/components/transcript/transcript-page"
 import { getMeeting, getTranscript, listMeetings } from "@/lib/api/meetings"
 import { createBookmark, deleteBookmark, listBookmarks } from "@/lib/api/bookmarks"
+import { createNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes"
 import type { MeetingDto, TranscriptUtteranceDto } from "@/types/api"
 
 vi.mock("@/lib/api/meetings", () => ({
@@ -16,6 +17,13 @@ vi.mock("@/lib/api/bookmarks", () => ({
   createBookmark: vi.fn(),
   deleteBookmark: vi.fn(),
   listBookmarks: vi.fn(),
+}))
+
+vi.mock("@/lib/api/notes", () => ({
+  createNote: vi.fn(),
+  deleteNote: vi.fn(),
+  listNotes: vi.fn(),
+  updateNote: vi.fn(),
 }))
 
 const meeting: MeetingDto = {
@@ -52,6 +60,11 @@ describe("TranscriptPage", () => {
     vi.mocked(deleteBookmark).mockReset()
     vi.mocked(listBookmarks).mockReset()
     vi.mocked(listBookmarks).mockResolvedValue([])
+    vi.mocked(createNote).mockReset()
+    vi.mocked(deleteNote).mockReset()
+    vi.mocked(listNotes).mockReset()
+    vi.mocked(updateNote).mockReset()
+    vi.mocked(listNotes).mockResolvedValue([])
     vi.mocked(listMeetings).mockResolvedValue({
       items: [meeting], page: 0, size: 1, totalItems: 1, totalPages: 1,
     })
@@ -59,6 +72,54 @@ describe("TranscriptPage", () => {
     vi.mocked(getTranscript).mockResolvedValue({
       items: [utterance], page: 0, size: 100, totalItems: 1, totalPages: 1,
     })
+  })
+
+  it("restores linked notes and their translated context after a fresh render", async () => {
+    vi.mocked(listNotes).mockResolvedValue([{
+      id: "note-1",
+      meetingId: meeting.id,
+      utteranceId: utterance.id,
+      bookmarkId: null,
+      content: "Compare this with the source paper.",
+      offsetMs: utterance.offsetMs,
+      sourceText: utterance.sourceText,
+      translatedText: utterance.translatedText,
+      createdAt: "2026-08-25T00:01:05Z",
+      updatedAt: "2026-08-25T00:01:05Z",
+    }])
+
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    expect(await screen.findByText("Compare this with the source paper.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Edit research note" })).toBeInTheDocument()
+  })
+
+  it("persists a timestamp-linked note from the transcript composer", async () => {
+    vi.mocked(createNote).mockResolvedValue({
+      id: "note-new",
+      meetingId: meeting.id,
+      utteranceId: utterance.id,
+      bookmarkId: null,
+      content: "Review this derivation.",
+      offsetMs: utterance.offsetMs,
+      sourceText: utterance.sourceText,
+      translatedText: utterance.translatedText,
+      createdAt: "2026-08-25T00:01:05Z",
+      updatedAt: "2026-08-25T00:01:05Z",
+    })
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Add research note" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Your note" }), {
+      target: { value: "Review this derivation." },
+    })
+    fireEvent.click(screen.getByRole("button", { name: "Save note" }))
+
+    await waitFor(() => expect(createNote).toHaveBeenCalledWith(meeting.id, {
+      utteranceId: utterance.id,
+      content: "Review this derivation.",
+    }))
+    expect(await screen.findByText("Review this derivation.")).toBeInTheDocument()
   })
 
   it("restores persisted bookmark state after a fresh render", async () => {

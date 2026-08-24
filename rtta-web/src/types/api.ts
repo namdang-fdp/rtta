@@ -45,3 +45,16 @@ export interface BookmarkDto {
   createdAt: string
   metadata: Record<string, unknown> | null
 }
+
+export interface ResearchNoteDto {
+  id: string
+  meetingId: string
+  utteranceId: string | null
+  bookmarkId: string | null
+  content: string
+  offsetMs: number | null
+  sourceText: string | null
+  translatedText: string | null
+  createdAt: string
+  updatedAt: string
+}

@@ -16,6 +16,7 @@ interface LiveTranslationSurfaceProps {
   bookmarkedIds: Set<string>
   pendingBookmarkIds: Set<string>
   notedIds: Set<string>
+  notesSaving: boolean
   onBookmark: (utterance: TranslationUtterance) => void
   onNote: (utterance: TranslationUtterance) => void
   onExplain: (utterance: TranslationUtterance) => void
@@ -29,6 +30,7 @@ export function LiveTranslationSurface({
   bookmarkedIds,
   pendingBookmarkIds,
   notedIds,
+  notesSaving,
   onBookmark,
   onNote,
   onExplain,
@@ -66,6 +68,7 @@ export function LiveTranslationSurface({
                 bookmarked={bookmarkedIds.has(utterance.id)}
                 bookmarkPending={pendingBookmarkIds.has(utterance.id)}
                 noted={notedIds.has(utterance.id)}
+                notePending={notesSaving}
                 onBookmark={() => onBookmark(utterance)}
                 onNote={() => onNote(utterance)}
                 onExplain={() => onExplain(utterance)}
@@ -120,6 +123,7 @@ interface FinalUtteranceProps {
   bookmarked: boolean
   bookmarkPending: boolean
   noted: boolean
+  notePending: boolean
   onBookmark: () => void
   onNote: () => void
   onExplain: () => void
@@ -130,6 +134,7 @@ function FinalUtterance({
   bookmarked,
   bookmarkPending,
   noted,
+  notePending,
   onBookmark,
   onNote,
   onExplain,
@@ -141,7 +146,7 @@ function FinalUtterance({
         <span>{formatOffset(utterance.offsetMs)}</span>
         <span aria-hidden="true">·</span>
         <span>Meeting audio</span>
-        {noted ? <span className="ml-auto text-primary">Local note</span> : null}
+        {noted ? <span className="ml-auto text-primary">Research note</span> : null}
       </div>
       <p
         lang="vi"
@@ -174,7 +179,8 @@ function FinalUtterance({
           variant="ghost"
           size="icon-sm"
           onClick={onNote}
-          aria-label="Add a local note"
+          disabled={!utterance.utteranceId || notePending}
+          aria-label={noted ? "Edit research note" : "Add research note"}
           className={noted ? "bg-accent text-primary" : "text-muted-foreground"}
         >
           <NotebookPen />

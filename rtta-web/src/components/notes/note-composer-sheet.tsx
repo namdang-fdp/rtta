@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Clock3, NotebookPen } from "lucide-react"
+import { Clock3, LoaderCircle, NotebookPen } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,18 +14,20 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { formatOffset } from "@/lib/format"
-import type { TranslationUtterance } from "@/types/live"
+import type { MeetingMoment } from "@/types/meeting"
 
 interface NoteComposerSheetProps {
-  target: TranslationUtterance | null
+  target: MeetingMoment | null
   initialDraft?: string
+  saving?: boolean
   onClose: () => void
-  onSave: (utteranceId: string, note: string) => void
+  onSave: (note: string) => void
 }
 
 export function NoteComposerSheet({
   target,
   initialDraft = "",
+  saving = false,
   onClose,
   onSave,
 }: NoteComposerSheetProps) {
@@ -41,7 +43,7 @@ export function NoteComposerSheet({
           </div>
           <SheetTitle className="editorial-title text-2xl font-bold">Capture this moment</SheetTitle>
           <SheetDescription>
-            Local draft only — notes are not synced or persisted in S05.
+            This note stays linked to the finalized transcript moment.
           </SheetDescription>
         </SheetHeader>
 
@@ -72,10 +74,11 @@ export function NoteComposerSheet({
         <SheetFooter className="border-t px-5 py-4 sm:flex-row sm:justify-end">
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button
-            onClick={() => target && onSave(target.id, draft.trim())}
-            disabled={!target || !draft.trim()}
+            onClick={() => target && onSave(draft.trim())}
+            disabled={!target || !draft.trim() || saving}
           >
-            Keep local draft
+            {saving ? <LoaderCircle className="animate-spin" /> : null}
+            Save note
           </Button>
         </SheetFooter>
       </SheetContent>
