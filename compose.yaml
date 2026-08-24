@@ -1,0 +1,66 @@
+name: rtta
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg17-bookworm
+    environment:
+      POSTGRES_DB: ${RTTA_DB_NAME}
+      POSTGRES_USER: ${RTTA_DB_USER}
+      POSTGRES_PASSWORD: ${RTTA_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${RTTA_DB_PORT}:5432"
+    volumes:
+      - rtta-postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${RTTA_MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${RTTA_MINIO_SECRET_KEY}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - rtta-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${RTTA_MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${RTTA_MINIO_SECRET_KEY}
+      RTTA_MINIO_RECORDINGS_BUCKET: ${RTTA_MINIO_RECORDINGS_BUCKET}
+      RTTA_MINIO_DOCUMENTS_BUCKET: ${RTTA_MINIO_DOCUMENTS_BUCKET}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mc alias set rtta http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "rtta/$${RTTA_MINIO_RECORDINGS_BUCKET}"
+        mc mb --ignore-existing "rtta/$${RTTA_MINIO_DOCUMENTS_BUCKET}"
+        mc anonymous set none "rtta/$${RTTA_MINIO_RECORDINGS_BUCKET}"
+        mc anonymous set none "rtta/$${RTTA_MINIO_DOCUMENTS_BUCKET}"
+    restart: "no"
+
+volumes:
+  rtta-postgres-data:
+  rtta-minio-data:
+
