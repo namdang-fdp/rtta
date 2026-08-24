@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.rtta.dorriss.live.LiveSessionHub;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationProvider;
 import com.rtta.dorriss.translation.TranslationSession;
@@ -34,6 +35,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private final AudioControlProtocol controlProtocol;
 	private final TranslationProvider translationProvider;
 	private final TranslationWireProtocol translationWireProtocol;
+	private final LiveSessionHub liveSessionHub;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
 	private final Map<String, SerializedOutboundWebSocket> outboundConnections =
 			new ConcurrentHashMap<>();
@@ -41,10 +43,12 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	AudioWebSocketHandler(
 			AudioControlProtocol controlProtocol,
 			TranslationProvider translationProvider,
-			TranslationWireProtocol translationWireProtocol) {
+			TranslationWireProtocol translationWireProtocol,
+			LiveSessionHub liveSessionHub) {
 		this.controlProtocol = controlProtocol;
 		this.translationProvider = translationProvider;
 		this.translationWireProtocol = translationWireProtocol;
+		this.liveSessionHub = liveSessionHub;
 	}
 
 	int activeSessionCount() {
@@ -116,6 +120,9 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			session.pushAudio(pcm);
 		}
 		catch (RuntimeException exception) {
+			liveSessionHub.sessionError(
+					session.command().sessionId(),
+					"Live translation stopped unexpectedly.");
 			failConnection(
 					socket,
 					"translation-provider-failure",
@@ -179,6 +186,9 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 					event -> handleTranslation(socket, newSession, event));
 		}
 		catch (RuntimeException exception) {
+			liveSessionHub.sessionError(
+					command.sessionId(),
+					"Meeting translation could not start.");
 			failConnection(
 					socket,
 					"translation-open-failed",
@@ -186,6 +196,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			return;
 		}
 		if (!newSession.attachTranslation(translationSession)) {
+			return;
+		}
+		if (!newSession.announceLive(() -> liveSessionHub.sessionStarted(
+				command.sessionId(), startedAt))) {
 			return;
 		}
 
@@ -239,14 +253,25 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	}
 
 	private void closeTranslation(AudioConnectionSession session, String reason) {
+		CloseResources resources = session.detachTranslation();
+		if (resources == null) {
+			return;
+		}
 		try {
-			session.closeTranslation();
+			if (resources.translationSession() != null) {
+				resources.translationSession().close();
+			}
 		}
 		catch (RuntimeException exception) {
 			LOGGER.warn(
 					"RTTA TRANSLATION cleanupFailed session={} reason={}",
 					session.command().sessionId(),
 					reason);
+		}
+		finally {
+			if (resources.liveAnnounced()) {
+				liveSessionHub.sessionStopped(session.command().sessionId(), Instant.now());
+			}
 		}
 	}
 
@@ -258,6 +283,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		if (activeSessions.get(socket.getId()) != session) {
 			return;
 		}
+		liveSessionHub.publishTranslation(session.command().sessionId(), event);
 
 		String payload;
 		try {
@@ -450,21 +476,38 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			translationSession.pushAudio(pcm);
 		}
 
-		private void closeTranslation() {
+		private synchronized boolean announceLive(Runnable announcer) {
+			if (closed || !acceptingAudio || translationSession == null) {
+				return false;
+			}
+			liveAnnounced = true;
+			announcer.run();
+			return true;
+		}
+
+		private CloseResources detachTranslation() {
 			TranslationSession session;
+			boolean shouldAnnounceStop;
 			synchronized (this) {
 				if (closed) {
-					return;
+					return null;
 				}
 				closed = true;
 				acceptingAudio = false;
 				session = translationSession;
 				translationSession = null;
+				shouldAnnounceStop = liveAnnounced;
+				liveAnnounced = false;
 			}
-			if (session != null) {
-				session.close();
-			}
+			return new CloseResources(session, shouldAnnounceStop);
 		}
+
+		private boolean liveAnnounced;
+	}
+
+	private record CloseResources(
+			TranslationSession translationSession,
+			boolean liveAnnounced) {
 	}
 
 	private static final class SerializedOutboundWebSocket {

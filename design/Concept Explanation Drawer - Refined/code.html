@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Concept Explanation - Research Alpha</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Merriweather:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed": "#ffd9dd",
+                      "on-secondary-container": "#666160",
+                      "secondary": "#625d5c",
+                      "primary-container": "#a6606b",
+                      "inverse-surface": "#34302c",
+                      "surface-variant": "#e9e1dc",
+                      "secondary-fixed": "#e8e1df",
+                      "primary": "#8a4853",
+                      "outline-variant": "#d7c1c3",
+                      "surface-container-high": "#efe6e2",
+                      "on-surface-variant": "#524345",
+                      "on-secondary-fixed-variant": "#4a4645",
+                      "on-primary-fixed": "#3a0915",
+                      "primary-fixed-dim": "#ffb2bc",
+                      "surface-tint": "#8c4b55",
+                      "surface-container": "#f5ece7",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed-variant": "#70343e",
+                      "surface-container-low": "#fbf2ed",
+                      "on-surface": "#1e1b18",
+                      "on-secondary": "#ffffff",
+                      "inverse-primary": "#ffb2bc",
+                      "on-error": "#ffffff",
+                      "surface-container-highest": "#e9e1dc",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#ccc5c3",
+                      "tertiary-fixed-dim": "#ecbbba",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#e6dedc",
+                      "on-secondary-fixed": "#1e1b1a",
+                      "tertiary-fixed": "#ffdad9",
+                      "on-primary": "#ffffff",
+                      "surface": "#fff8f5",
+                      "tertiary-container": "#936a6a",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-on-surface": "#f8efea",
+                      "on-tertiary-container": "#fffbff",
+                      "on-background": "#1e1b18",
+                      "on-primary-container": "#fffbff",
+                      "surface-dim": "#e1d8d4",
+                      "on-tertiary-fixed-variant": "#603d3e",
+                      "background": "#fff8f5",
+                      "on-tertiary": "#ffffff",
+                      "surface-bright": "#fff8f5",
+                      "on-tertiary-fixed": "#2f1314",
+                      "tertiary": "#785253",
+                      "outline": "#857374"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "section-gap": "48px",
+                      "container-max-width": "1280px",
+                      "gutter": "24px",
+                      "stack-gap": "16px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "40px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Merriweather"
+                      ],
+                      "headline-md": [
+                              "Merriweather"
+                      ],
+                      "display-lg": [
+                              "Merriweather"
+                      ],
+                      "headline-lg": [
+                              "Merriweather"
+                      ],
+                      "code": [
+                              "Inter"
+                      ],
+                      "body-ui": [
+                              "Inter"
+                      ],
+                      "body-reading": [
+                              "Merriweather"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "code": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-ui": [
+                              "15px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-reading": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.8",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-ui text-body-ui selection:bg-primary-container selection:text-on-primary-container overflow-hidden">
+<!-- Top App Bar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-surface-variant dark:border-outline-variant docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 max-w-container-max-width mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-4">
+<button class="md:hidden p-2 -ml-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">RTTA Workspace</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-2">
+<button aria-label="radio_button_checked" class="p-2 text-on-surface-variant dark:text-outline hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">radio_button_checked</span>
+</button>
+<button aria-label="timer" class="p-2 text-on-surface-variant dark:text-outline hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">timer</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Workspace Area -->
+<div class="flex flex-1 overflow-hidden h-[calc(100vh-64px)]">
+<!-- Side Navigation (Desktop) -->
+<nav class="hidden md:flex flex-col h-full w-64 bg-surface-container-low dark:bg-surface-container-lowest border-r border-surface-variant dark:border-outline-variant py-6 px-4 space-y-stack-gap z-10 shrink-0">
+<div class="mb-8 px-2">
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Research Alpha</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">VNM-ENG Stream</p>
+</div>
+<div class="space-y-1">
+<!-- Nav Items -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container font-bold rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-label-md text-label-md">Live</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="font-label-md text-label-md">Transcript</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+<span class="font-label-md text-label-md">Notes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+<span class="font-label-md text-label-md">Context</span>
+</a>
+</div>
+<div class="mt-auto pt-4 border-t border-surface-variant">
+<div class="flex items-center gap-3 px-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">person</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Workspace Avatar</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 relative overflow-hidden flex">
+<!-- Simulated Main Content (Transcript/Editor) -->
+<div class="flex-1 h-full overflow-y-auto bg-surface relative">
+<!-- Active Progress Indicator -->
+<div class="absolute top-0 left-0 w-full h-1 bg-surface-variant">
+<div class="h-full bg-[#94A390] w-1/3 animate-pulse"></div>
+</div>
+<div class="p-margin-mobile md:p-margin-desktop max-w-3xl mx-auto pb-32">
+<h1 class="font-headline-lg text-headline-lg text-primary mb-8">Quantum Mechanics Lecture 04</h1>
+<div class="space-y-6">
+<!-- Source/Translation Pairs -->
+<div class="group flex flex-col border-l-2 border-transparent hover:border-primary-container pl-4 transition-colors">
+<p class="font-body-reading text-body-reading text-on-surface mb-2 leading-relaxed">
+                                Phương trình Schrödinger là nền tảng của cơ học lượng tử, mô tả sự tiến hóa theo thời gian của một hệ thống vật lý.
+                            </p>
+<div class="bg-secondary/5 rounded-lg p-4 font-body-reading text-body-reading text-on-surface-variant italic">
+                                The <span class="bg-primary-container/20 text-primary border-b border-primary/30 cursor-pointer hover:bg-primary-container/40 transition-colors" title="View Concept">Schrödinger Equation</span> is the foundation of quantum mechanics, describing the time evolution of a physical system.
+                            </div>
+</div>
+<div class="group flex flex-col border-l-2 border-transparent hover:border-primary-container pl-4 transition-colors">
+<p class="font-body-reading text-body-reading text-on-surface mb-2 leading-relaxed">
+                                Trong cơ học lượng tử, các trạng thái riêng biệt được gọi là các trạng thái eigen, tương ứng với các mức năng lượng xác định.
+                            </p>
+<div class="bg-secondary/5 rounded-lg p-4 font-body-reading text-body-reading text-on-surface-variant italic">
+                                In quantum mechanics, distinct states are referred to as <span class="bg-primary-container/20 text-primary border-b border-primary/30 cursor-pointer hover:bg-primary-container/40 transition-colors" title="View Concept">Eigenstates</span>, corresponding to defined energy levels.
+                            </div>
+</div>
+<div class="group flex flex-col border-l-2 border-primary pl-4 transition-colors">
+<p class="font-body-reading text-body-reading text-on-surface mb-2 leading-relaxed">
+                                Chú ý rằng hàm sóng phải thỏa mãn điều kiện chuẩn hóa trên toàn bộ không gian.
+                            </p>
+<div class="bg-secondary/5 rounded-lg p-4 font-body-reading text-body-reading text-on-surface-variant italic relative">
+<span class="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full"></span>
+                                Note that the wave function must satisfy the normalization condition over entire space.
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Concept Explanation Panel (Right Sidebar / Drawer) -->
+<!--
+                 Mobile: Overlay Drawer (hidden by default in this static view, shown as absolute)
+                 Desktop (lg): Integrated Sidebar
+            -->
+<aside class="absolute inset-y-0 right-0 w-full md:w-[400px] lg:relative lg:flex lg:w-[450px] bg-surface-container-low border-l border-surface-variant shadow-[-4px_0_24px_rgba(0,0,0,0.05)] lg:shadow-none flex-col z-40 transform transition-transform duration-300 ease-in-out translate-x-0">
+<!-- Panel Header -->
+<div class="flex items-center justify-between p-4 border-b border-surface-variant bg-surface-container-low/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 0;">menu_book</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Concept Glossary</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors lg:hidden">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+<button class="hidden lg:flex p-2 text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dock_to_right</span>
+</button>
+</div>
+<!-- Panel Content Scrollable Area -->
+<div class="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+<!-- Concept 1: Schrödinger Equation -->
+<div class="bg-surface rounded-xl border border-surface-variant overflow-hidden">
+<div class="p-5 border-b border-surface-variant bg-[#F9F1EF]">
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-1">Schrödinger Equation</h3>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-surface-variant rounded text-xs font-code text-on-surface-variant">VN</span>
+<span class="font-body-ui text-body-ui text-on-surface-variant">Phương trình Schrödinger</span>
+</div>
+</div>
+<div class="p-5 space-y-4">
+<div>
+<h4 class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Short Explanation</h4>
+<p class="font-body-ui text-body-ui text-on-surface leading-relaxed">
+                                    A linear partial differential equation that governs the wave function of a quantum-mechanical system. It is the quantum equivalent of Newton's second law in classical mechanics.
+                                </p>
+</div>
+<div class="pt-4 border-t border-surface-variant border-dashed">
+<h4 class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">science</span>
+                                    Technical Details
+                                </h4>
+<div class="bg-surface-container-low p-3 rounded-lg font-code text-code text-on-surface-variant overflow-x-auto">
+                                    iℏ(∂Ψ/∂t) = ĤΨ
+                                </div>
+<ul class="mt-3 space-y-2 font-body-ui text-body-ui text-on-surface-variant text-sm">
+<li class="flex items-start gap-2">
+<span class="text-primary mt-0.5">•</span>
+<span><strong>Ĥ</strong> is the Hamiltonian operator characterizing total energy.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-primary mt-0.5">•</span>
+<span><strong>Ψ</strong> is the wave function of the system.</span>
+</li>
+</ul>
+</div>
+<div class="pt-4 flex gap-2">
+<button class="flex-1 bg-primary text-on-primary font-label-md text-label-md py-2 px-4 rounded-lg hover:shadow-[0_2px_4px_rgba(138,72,83,0.2)] hover:opacity-90 transition-all text-center">
+                                    Add to Flashcards
+                                </button>
+<button aria-label="Copy Context" class="p-2 border border-outline-variant text-on-surface-variant rounded-lg hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Concept 2: Eigenstates -->
+<div class="bg-surface rounded-xl border border-surface-variant overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+<div class="p-5 border-b border-surface-variant bg-[#F9F1EF]">
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-1">Eigenstates</h3>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-surface-variant rounded text-xs font-code text-on-surface-variant">VN</span>
+<span class="font-body-ui text-body-ui text-on-surface-variant">Trạng thái riêng</span>
+</div>
+</div>
+<div class="p-5 space-y-4">
+<div>
+<h4 class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2">Short Explanation</h4>
+<p class="font-body-ui text-body-ui text-on-surface leading-relaxed">
+                                    Specific states of a quantum system where an observable has a definite, measurable value. When measured, the system will collapse into one of these states.
+                                </p>
+</div>
+<div class="pt-4 border-t border-surface-variant border-dashed">
+<h4 class="font-label-md text-label-md text-outline uppercase tracking-wider mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">science</span>
+                                    Technical Details
+                                </h4>
+<ul class="mt-3 space-y-2 font-body-ui text-body-ui text-on-surface-variant text-sm">
+<li class="flex items-start gap-2">
+<span class="text-primary mt-0.5">•</span>
+<span>Solutions to the time-independent Schrödinger equation.</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-primary mt-0.5">•</span>
+<span>Form an orthonormal basis for the Hilbert space.</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</div>
+<!-- Mobile Navigation (Bottom) - Hidden on Desktop -->
+<nav class="md:hidden fixed bottom-0 w-full bg-surface border-t border-surface-variant z-50 px-4 pb-safe pt-2">
+<div class="flex justify-around items-center h-14">
+<a class="flex flex-col items-center justify-center w-full h-full text-primary" href="#">
+<div class="px-4 py-1 bg-secondary-container rounded-full mb-1">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">sensors</span>
+</div>
+<span class="text-[10px] font-medium">Live</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<div class="px-4 py-1 mb-1">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 0;">description</span>
+</div>
+<span class="text-[10px] font-medium">Transcript</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<div class="px-4 py-1 mb-1">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+</div>
+<span class="text-[10px] font-medium">Notes</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<div class="px-4 py-1 mb-1">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+</div>
+<span class="text-[10px] font-medium">Context</span>
+</a>
+</div>
+</nav>
+<style>
+        /* Custom scrollbar for the panel to keep it minimal */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.surface-variant');
+            border-radius: 20px;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+    </style>
+</body></html>

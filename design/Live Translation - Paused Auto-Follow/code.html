@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aurelius Workspace - Live Translation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Merriweather:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#ffd9dd",
+                    "on-secondary-container": "#666160",
+                    "secondary": "#625d5c",
+                    "primary-container": "#a6606b",
+                    "inverse-surface": "#34302c",
+                    "surface-variant": "#e9e1dc",
+                    "secondary-fixed": "#e8e1df",
+                    "primary": "#8a4853",
+                    "outline-variant": "#d7c1c3",
+                    "surface-container-high": "#efe6e2",
+                    "on-surface-variant": "#524345",
+                    "on-secondary-fixed-variant": "#4a4645",
+                    "on-primary-fixed": "#3a0915",
+                    "primary-fixed-dim": "#ffb2bc",
+                    "surface-tint": "#8c4b55",
+                    "surface-container": "#f5ece7",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#70343e",
+                    "surface-container-low": "#fbf2ed",
+                    "on-surface": "#1e1b18",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#ffb2bc",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e9e1dc",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#ccc5c3",
+                    "tertiary-fixed-dim": "#ecbbba",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#e6dedc",
+                    "on-secondary-fixed": "#1e1b1a",
+                    "tertiary-fixed": "#ffdad9",
+                    "on-primary": "#ffffff",
+                    "surface": "#fff8f5",
+                    "tertiary-container": "#936a6a",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-on-surface": "#f8efea",
+                    "on-tertiary-container": "#fffbff",
+                    "on-background": "#1e1b18",
+                    "on-primary-container": "#fffbff",
+                    "surface-dim": "#e1d8d4",
+                    "on-tertiary-fixed-variant": "#603d3e",
+                    "background": "#fff8f5",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#fff8f5",
+                    "on-tertiary-fixed": "#2f1314",
+                    "tertiary": "#785253",
+                    "outline": "#857374"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "section-gap": "48px",
+                    "container-max-width": "1280px",
+                    "gutter": "24px",
+                    "stack-gap": "16px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": ["Merriweather"],
+                    "headline-md": ["Merriweather"],
+                    "display-lg": ["Merriweather"],
+                    "headline-lg": ["Merriweather"],
+                    "code": ["Inter"],
+                    "body-ui": ["Inter"],
+                    "body-reading": ["Merriweather"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "code": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-ui": ["15px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-reading": ["18px", {"lineHeight": "1.8", "letterSpacing": "0.01em", "fontWeight": "400"}],
+                    "label-md": ["13px", {"lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .split-pane-divider {
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--tw-colors-surface-variant), transparent);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden flex font-body-ui text-body-ui">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low border-r border-surface-variant docked left-0 h-full w-20 md:w-64 flex flex-col h-full py-6 px-4 space-y-stack-gap flex-shrink-0 z-20">
+<!-- Header -->
+<div class="mb-section-gap px-4 hidden md:block">
+<h1 class="font-headline-md text-headline-md font-bold text-primary truncate">Research Alpha</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1 opacity-80">VNM-ENG Stream</p>
+</div>
+<div class="mb-section-gap md:hidden flex justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">dataset</span>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 space-y-unit">
+<!-- Active: Live -->
+<a class="flex items-center space-x-3 px-4 py-3 bg-secondary-container text-on-secondary-container font-bold rounded-full Transition-all duration-200 ease-in-out hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-label-md text-label-md hidden md:block">Live</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-full Transition-all duration-200 ease-in-out hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md hidden md:block">Transcript</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-full Transition-all duration-200 ease-in-out hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-md text-label-md hidden md:block">Notes</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 text-on-surface-variant hover:bg-surface-variant rounded-full Transition-all duration-200 ease-in-out hover:bg-surface-container-high group" href="#">
+<span class="material-symbols-outlined">auto_stories</span>
+<span class="font-label-md text-label-md hidden md:block">Context</span>
+</a>
+</div>
+<!-- Workspace Avatar (Bottom) -->
+<div class="mt-auto pt-4 border-t border-surface-variant flex items-center px-2">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden flex-shrink-0">
+<img alt="Workspace Avatar" class="w-full h-full object-cover" data-alt="A highly detailed close-up shot of a modern, abstract geometric avatar image. The aesthetic is clean, light-mode corporate minimalism using a soft dusty rose and sage green color palette. The lighting is bright and diffuse, projecting a serene, professional atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4CD3IdFSg8w_-G-RmX0SCOeKWNIrG0usn0W1m4wbKX_F4YNzUr-yJ8dAidy2Z4zRYlt9GLCEGrkmM3B1PoxLSvLGslYmZ0wReb1sq-fd2o0_qfoKchzPNuz719r3gXkoALfvCjkzxfyjtVAYEi7Rqvzf1VbBPiNm1AjD1lIZA5W_DxL1spmH4DgfEQ50n95Bjg8J-FDzDlU6I3JHBL_reE9zBvfPyzK6YBJUjHvC8tJB0_uFhBPmWLg"/>
+</div>
+<div class="ml-3 hidden md:block">
+<p class="font-label-md text-label-md text-on-surface">Dr. E. Vance</p>
+<p class="font-label-md text-label-md text-on-surface-variant text-[11px]">Lead Translator</p>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="bg-surface docked full-width top-0 border-b border-surface-variant z-10 flex-shrink-0">
+<div class="flex justify-between items-center w-full px-margin-desktop h-16 max-w-container-max-width mx-auto">
+<div class="flex items-center space-x-4">
+<span class="font-headline-md text-headline-md font-bold text-primary">RTTA Workspace</span>
+<div class="hidden md:flex items-center space-x-2 bg-surface-container px-3 py-1 rounded-full border border-surface-variant">
+<div class="w-2 h-2 rounded-full bg-outline animate-pulse"></div>
+<span class="font-label-md text-label-md text-on-surface-variant">Auto-scroll Paused</span>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-full transition-colors" title="Focus Mode">
+<span class="material-symbols-outlined">radio_button_checked</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-full transition-colors" title="Session Timer">
+<span class="material-symbols-outlined">timer</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Split Pane Workspace -->
+<main class="flex-1 flex overflow-hidden relative bg-surface-container-lowest">
+<!-- Source Pane (Left) -->
+<section class="flex-1 flex flex-col h-full overflow-y-auto relative pb-32">
+<div class="sticky top-0 bg-surface-container-lowest/90 backdrop-blur-md px-margin-desktop py-4 z-10 border-b border-surface-variant">
+<h2 class="font-headline-md text-headline-md text-on-surface">Source (Vietnamese)</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Audio Channel 1</p>
+</div>
+<div class="px-margin-desktop py-section-gap max-w-3xl mx-auto space-y-6">
+<p class="font-body-reading text-body-reading text-on-surface-variant opacity-60">
+                        ...khi chúng tôi tiến hành phân tích các mẫu đất ở độ sâu 50 mét, kết quả cho thấy một lượng lớn khoáng chất hiếm chưa từng được ghi nhận trong khu vực này.
+                    </p>
+<p class="font-body-reading text-body-reading text-on-surface-variant opacity-80">
+                        Điều đáng chú ý là cấu trúc tinh thể của các khoáng chất này rất đặc biệt, có khả năng chịu nhiệt độ và áp suất cực cao mà không bị biến dạng.
+                    </p>
+<p class="font-body-reading text-body-reading text-on-surface border-l-2 border-outline-variant pl-4 py-1">
+                        Chúng tôi đề xuất cần có một cuộc khảo sát địa chất mở rộng và chi tiết hơn trong bán kính 10 km xung quanh điểm khoan hiện tại để xác định quy mô của mỏ khoáng sản này. Việc này có thể mất vài tháng nhưng rất cần thiết.
+                    </p>
+<p class="font-body-reading text-body-reading text-on-surface">
+                        Ngoài ra, các chỉ số về bức xạ nền cũng đang ở mức thấp hơn mức trung bình, điều này khá kỳ lạ so với các mỏ quặng tương tự ở phía bắc. Chúng ta cần gọi đội vật lý hạt nhân đến đánh giá thêm.
+                    </p>
+</div>
+</section>
+<!-- Divider -->
+<div class="split-pane-divider h-full hidden lg:block"></div>
+<!-- Translation Pane (Right) -->
+<section class="flex-1 flex flex-col h-full overflow-y-auto relative bg-surface pb-32">
+<div class="sticky top-0 bg-surface/90 backdrop-blur-md px-margin-desktop py-4 z-10 border-b border-surface-variant">
+<h2 class="font-headline-md text-headline-md text-on-surface">Translation (English)</h2>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">AI Assisted • Manual Review</p>
+</div>
+<div class="px-margin-desktop py-section-gap max-w-3xl mx-auto space-y-6">
+<p class="font-body-reading text-body-reading text-on-surface-variant opacity-60">
+                        ...when we conducted the analysis of soil samples at a depth of 50 meters, the results showed a large amount of rare minerals previously unrecorded in this region.
+                    </p>
+<p class="font-body-reading text-body-reading text-on-surface-variant opacity-80">
+                        Notably, the crystal structure of these minerals is highly unusual, capable of withstanding extreme temperatures and pressures without deformation.
+                    </p>
+<div class="relative group">
+<p class="font-body-reading text-body-reading text-on-surface border-l-2 border-primary pl-4 py-1 bg-primary-fixed/30 -ml-4 pl-8 rounded-r-lg">
+                            We propose the need for a more extensive and detailed geological survey within a 10 km radius around the current drilling site to determine the scale of this mineral deposit. This may take several months but is absolutely essential.
+                        </p>
+<!-- Annotation hint -->
+<div class="absolute right-0 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-primary hover:bg-primary-fixed p-1 rounded"><span class="material-symbols-outlined text-sm">edit</span></button>
+</div>
+</div>
+<p class="font-body-reading text-body-reading text-on-surface">
+                        Additionally, background radiation readings are lower than average, which is quite strange compared to similar ore deposits in the north. We need to call in the nuclear physics team for further evaluation.
+                    </p>
+</div>
+</section>
+<!-- Floating 'Jump to live' Control -->
+<div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30">
+<button class="flex items-center space-x-2 bg-inverse-surface text-on-tertiary-container px-6 py-3 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-on-surface transition-all duration-200 group">
+<span class="material-symbols-outlined text-sm animate-bounce group-hover:animate-none">arrow_downward</span>
+<span class="font-label-md text-label-md font-semibold tracking-wide">Jump to live</span>
+</button>
+</div>
+<!-- Shadow gradient overlay to indicate more content below -->
+<div class="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-surface-container-lowest to-transparent pointer-events-none z-20"></div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RTTA Workspace - Transcript</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Merriweather:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed": "#ffd9dd",
+                    "on-secondary-container": "#666160",
+                    "secondary": "#625d5c",
+                    "primary-container": "#a6606b",
+                    "inverse-surface": "#34302c",
+                    "surface-variant": "#e9e1dc",
+                    "secondary-fixed": "#e8e1df",
+                    "primary": "#8a4853",
+                    "outline-variant": "#d7c1c3",
+                    "surface-container-high": "#efe6e2",
+                    "on-surface-variant": "#524345",
+                    "on-secondary-fixed-variant": "#4a4645",
+                    "on-primary-fixed": "#3a0915",
+                    "primary-fixed-dim": "#ffb2bc",
+                    "surface-tint": "#8c4b55",
+                    "surface-container": "#f5ece7",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#70343e",
+                    "surface-container-low": "#fbf2ed",
+                    "on-surface": "#1e1b18",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#ffb2bc",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e9e1dc",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed-dim": "#ccc5c3",
+                    "tertiary-fixed-dim": "#ecbbba",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#e6dedc",
+                    "on-secondary-fixed": "#1e1b1a",
+                    "tertiary-fixed": "#ffdad9",
+                    "on-primary": "#ffffff",
+                    "surface": "#fff8f5",
+                    "tertiary-container": "#936a6a",
+                    "surface-container-lowest": "#ffffff",
+                    "inverse-on-surface": "#f8efea",
+                    "on-tertiary-container": "#fffbff",
+                    "on-background": "#1e1b18",
+                    "on-primary-container": "#fffbff",
+                    "surface-dim": "#e1d8d4",
+                    "on-tertiary-fixed-variant": "#603d3e",
+                    "background": "#fff8f5",
+                    "on-tertiary": "#ffffff",
+                    "surface-bright": "#fff8f5",
+                    "on-tertiary-fixed": "#2f1314",
+                    "tertiary": "#785253",
+                    "outline": "#857374"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "section-gap": "48px",
+                    "container-max-width": "1280px",
+                    "gutter": "24px",
+                    "stack-gap": "16px",
+                    "margin-mobile": "16px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "headline-lg-mobile": [
+                            "Merriweather"
+                    ],
+                    "headline-md": [
+                            "Merriweather"
+                    ],
+                    "display-lg": [
+                            "Merriweather"
+                    ],
+                    "headline-lg": [
+                            "Merriweather"
+                    ],
+                    "code": [
+                            "Inter"
+                    ],
+                    "body-ui": [
+                            "Inter"
+                    ],
+                    "body-reading": [
+                            "Merriweather"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "code": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-ui": [
+                            "15px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-reading": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.8",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-md": [
+                            "13px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-ui h-screen overflow-hidden flex flex-col antialiased">
+<!-- TopAppBar JSON Blueprint -->
+<header class="bg-surface dark:bg-surface-dim flex justify-between items-center w-full px-margin-desktop h-16 border-b border-surface-variant dark:border-outline-variant flat no shadows">
+<div class="flex items-center gap-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">RTTA Workspace</h1>
+</div>
+<!-- Non-distracting Search (Task requirement) -->
+<div class="hidden md:flex items-center bg-surface-container-high rounded-full px-4 py-2 w-64 border border-outline-variant/30 focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mr-2" style="font-variation-settings: 'FILL' 0;">search</span>
+<input class="bg-transparent border-none outline-none text-body-ui w-full text-on-surface placeholder:text-on-surface-variant/70 focus:ring-0 p-0" placeholder="Search transcript..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors rounded-full p-2 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">radio_button_checked</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors rounded-full p-2 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">timer</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar JSON Blueprint -->
+<nav class="bg-surface-container-low dark:bg-surface-container-lowest border-r border-surface-variant dark:border-outline-variant flex flex-col h-full py-6 px-4 space-y-stack-gap docked left-0 w-20 md:w-64 z-10 hidden md:flex">
+<div class="mb-8 px-4 hidden md:block">
+<h2 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim mb-1">Research Alpha</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">VNM-ENG Stream</p>
+</div>
+<ul class="flex flex-col space-y-2 w-full">
+<!-- Live (Inactive) -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out w-full group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sensors</span>
+<span class="font-label-md text-label-md hidden md:block group-hover:text-on-surface transition-colors">Live</span>
+</a>
+</li>
+<!-- Transcript (Active Match) -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full bg-secondary-container dark:bg-primary-container text-on-secondary-container font-bold opacity-80 transition-opacity w-full" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-label-md text-label-md hidden md:block">Transcript</span>
+</a>
+</li>
+<!-- Notes (Inactive) -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out w-full group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">edit_note</span>
+<span class="font-label-md text-label-md hidden md:block group-hover:text-on-surface transition-colors">Notes</span>
+</a>
+</li>
+<!-- Context (Inactive) -->
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-all duration-200 ease-in-out w-full group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_stories</span>
+<span class="font-label-md text-label-md hidden md:block group-hover:text-on-surface transition-colors">Context</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-8 flex items-center gap-3 px-4 w-full">
+<img alt="Workspace Avatar" class="w-8 h-8 rounded-full border border-surface-variant object-cover" data-alt="A small, professional corporate avatar of a researcher, clean minimal lighting, soft background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgFGhCKbvoU4hDLkdsTn1IC2id4t6bSZWIQHFyEOm7K3mEivXGnND-ZFkFk9Pfy52aVcJ_OH7oUb6Wfm0MPfk8bjTTQxnMVJdaUq4DPyuCeJjVqvUxzapkxiA2AIGdEn4y4xop2X-p2QKkdV3rFBslt3fG9evlbmpWS4Pn619onuIA2MPXnhVbEteuzPpM48zhIqya-7K05zuTZosee7_iYt0I5kNuS6T2-Wou_NXskiYAegCY6XnqXw"/>
+<span class="font-label-md text-label-md text-on-surface hidden md:block truncate">Dr. H. Nguyen</span>
+</div>
+</nav>
+<!-- Main Content Area - Split Pane Concept -->
+<main class="flex-1 flex flex-col bg-surface overflow-hidden relative">
+<!-- Context Header (Serif Title) -->
+<div class="px-margin-desktop py-6 border-b border-surface-variant/50 flex justify-between items-end flex-shrink-0 bg-surface/90 backdrop-blur-sm z-10">
+<div>
+<span class="font-label-md text-label-md text-primary tracking-widest uppercase mb-2 block">Session 04</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Mekong Delta Agricultural Shift</h2>
+</div>
+<!-- Audio/Seek Bar -->
+<div class="flex items-center gap-4 bg-surface-container-low px-4 py-2 rounded-full border border-surface-variant">
+<button class="text-primary hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="w-48 h-1 bg-surface-variant rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-primary w-1/3"></div>
+</div>
+<span class="font-code text-code text-on-surface-variant">14:22 / 45:00</span>
+</div>
+</div>
+<!-- Transcript Scroll Area -->
+<div class="flex-1 overflow-y-auto px-margin-desktop py-8 scroll-smooth" id="transcript-container">
+<div class="max-w-3xl mx-auto space-y-12">
+<!-- Transcript Block 1 -->
+<div class="group relative flex gap-6">
+<!-- Timeline / Meta -->
+<div class="w-24 flex-shrink-0 flex flex-col items-end pt-1">
+<span class="font-code text-code text-on-surface-variant/60 group-hover:text-primary transition-colors">14:22</span>
+<span class="font-label-md text-label-md text-on-surface font-medium mt-1 text-right">Prof. Tran</span>
+</div>
+<!-- Content -->
+<div class="flex-1 space-y-3 pb-6 border-b border-surface-variant/30 relative">
+<!-- Action Indicators (Inline) -->
+<div class="absolute -left-4 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 -ml-8">
+<button class="text-outline hover:text-primary transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">bookmark_add</span>
+</button>
+<button class="text-outline hover:text-primary transition-colors" title="Add Note">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">note_add</span>
+</button>
+</div>
+<!-- Vietnamese (Primary) -->
+<p class="font-body-reading text-body-reading text-on-surface leading-relaxed">
+                                Sự chuyển đổi cơ cấu cây trồng ở đồng bằng sông Cửu Long không chỉ là vấn đề kinh tế, mà còn là sự thích ứng sống còn với biến đổi khí hậu, đặc biệt là tình trạng xâm nhập mặn.
+                            </p>
+<!-- English (Secondary) -->
+<div class="bg-surface-container-low/50 p-4 rounded-lg border-l-2 border-primary/20">
+<p class="font-body-ui text-body-ui text-on-surface-variant italic">
+                                    "The shift in crop structure in the Mekong Delta is not just an economic issue, but a vital adaptation to climate change, particularly saltwater intrusion."
+                                </p>
+</div>
+</div>
+</div>
+<!-- Transcript Block 2 -->
+<div class="group relative flex gap-6">
+<!-- Timeline / Meta -->
+<div class="w-24 flex-shrink-0 flex flex-col items-end pt-1">
+<span class="font-code text-code text-on-surface-variant/60 group-hover:text-primary transition-colors">14:45</span>
+<span class="font-label-md text-label-md text-on-surface font-medium mt-1 text-right">Dr. Bell</span>
+</div>
+<!-- Content -->
+<div class="flex-1 space-y-3 pb-6 border-b border-surface-variant/30 relative">
+<!-- Action Indicators (Inline) -->
+<div class="absolute -left-4 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 -ml-8">
+<button class="text-primary" title="Bookmarked">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</button>
+<button class="text-outline hover:text-primary transition-colors" title="Add Note">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">note_add</span>
+</button>
+</div>
+<!-- English Source (Primary here as Bell is speaking) -->
+<p class="font-body-reading text-body-reading text-on-surface leading-relaxed">
+                                Exactly. And when we look at the data from the past five years, the acceleration of this intrusion is forcing farmers to abandon traditional rice paddies much earlier than our models predicted.
+                            </p>
+<!-- Vietnamese Translation (Secondary) -->
+<div class="bg-surface-container-low/50 p-4 rounded-lg border-l-2 border-primary/20">
+<p class="font-body-ui text-body-ui text-on-surface-variant italic">
+                                    "Chính xác. Và khi chúng ta xem xét dữ liệu từ năm năm qua, sự gia tăng nhanh chóng của tình trạng xâm nhập này đang buộc nông dân phải từ bỏ các ruộng lúa truyền thống sớm hơn nhiều so với dự đoán của các mô hình của chúng ta."
+                                </p>
+</div>
+<!-- Inline Note Display -->
+<div class="mt-4 flex gap-2 items-start bg-secondary-container/30 p-3 rounded text-sm">
+<span class="material-symbols-outlined text-secondary text-sm mt-0.5" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<p class="font-body-ui text-on-secondary-container text-sm">Check prediction models vs actual data from 2018-2023.</p>
+</div>
+</div>
+</div>
+<!-- Transcript Block 3 - Active/Playing -->
+<div class="group relative flex gap-6 bg-surface-container-low/40 -mx-4 px-4 py-4 rounded-xl shadow-sm border border-primary/10">
+<!-- Timeline / Meta -->
+<div class="w-24 flex-shrink-0 flex flex-col items-end pt-1">
+<span class="font-code text-code text-primary font-medium flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                15:12
+                            </span>
+<span class="font-label-md text-label-md text-on-surface font-medium mt-1 text-right">Prof. Tran</span>
+</div>
+<!-- Content -->
+<div class="flex-1 space-y-3 relative">
+<!-- Vietnamese (Primary) -->
+<p class="font-body-reading text-body-reading text-on-surface leading-relaxed">
+                                Chúng tôi đang thử nghiệm các giống lúa chịu mặn mới, nhưng song song đó, việc chuyển sang nuôi trồng thủy sản nước lợ đang mang lại hiệu quả kinh tế tức thời hơn cho bà con.
+                            </p>
+<!-- English (Secondary) -->
+<div class="bg-surface/80 p-4 rounded-lg border-l-2 border-primary shadow-sm">
+<p class="font-body-ui text-body-ui text-on-surface italic">
+                                    "We are testing new salt-tolerant rice varieties, but in parallel, switching to brackish water aquaculture is providing more immediate economic benefits for the local people."
+                                </p>
+</div>
+</div>
+</div>
+<div class="h-24"></div> <!-- Bottom padding for scroll -->
+</div>
+</div>
+<!-- Real-time Progress Bar (Task Requirement) -->
+<div class="absolute top-0 left-0 w-full h-1 bg-surface-variant z-20">
+<div class="h-full bg-[#94A390] w-1/3 transition-all duration-1000 ease-linear"></div>
+</div>
+</main>
+</div>
+</body></html>

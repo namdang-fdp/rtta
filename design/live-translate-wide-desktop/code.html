@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Translation - Quantum Physics Seminar</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Merriweather:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#ffd9dd",
+                        "on-secondary-container": "#666160",
+                        "secondary": "#625d5c",
+                        "primary-container": "#a6606b",
+                        "inverse-surface": "#34302c",
+                        "surface-variant": "#e9e1dc",
+                        "secondary-fixed": "#e8e1df",
+                        "primary": "#8a4853",
+                        "outline-variant": "#d7c1c3",
+                        "surface-container-high": "#efe6e2",
+                        "on-surface-variant": "#524345",
+                        "on-secondary-fixed-variant": "#4a4645",
+                        "on-primary-fixed": "#3a0915",
+                        "primary-fixed-dim": "#ffb2bc",
+                        "surface-tint": "#8c4b55",
+                        "surface-container": "#f5ece7",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#70343e",
+                        "surface-container-low": "#fbf2ed",
+                        "on-surface": "#1e1b18",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#ffb2bc",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e9e1dc",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ccc5c3",
+                        "tertiary-fixed-dim": "#ecbbba",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#e6dedc",
+                        "on-secondary-fixed": "#1e1b1a",
+                        "tertiary-fixed": "#ffdad9",
+                        "on-primary": "#ffffff",
+                        "surface": "#fff8f5",
+                        "tertiary-container": "#936a6a",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f8efea",
+                        "on-tertiary-container": "#fffbff",
+                        "on-background": "#1e1b18",
+                        "on-primary-container": "#fffbff",
+                        "surface-dim": "#e1d8d4",
+                        "on-tertiary-fixed-variant": "#603d3e",
+                        "background": "#fff8f5",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fff8f5",
+                        "on-tertiary-fixed": "#2f1314",
+                        "tertiary": "#785253",
+                        "outline": "#857374"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "section-gap": "48px",
+                        "container-max-width": "1280px",
+                        "gutter": "24px",
+                        "stack-gap": "16px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Merriweather"],
+                        "headline-md": ["Merriweather"],
+                        "display-lg": ["Merriweather"],
+                        "headline-lg": ["Merriweather"],
+                        "code": ["Inter"],
+                        "body-ui": ["Inter"],
+                        "body-reading": ["Merriweather"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-ui": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-reading": ["18px", { "lineHeight": "1.8", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "label-md": ["13px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-dot {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.5; }
+        }
+        .translation-block:hover .action-menu {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden font-body-ui text-body-ui">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low dark:bg-surface-container-lowest border-r border-surface-variant dark:border-outline-variant flex flex-col h-full py-6 px-4 space-y-stack-gap docked left-0 h-full w-20 md:w-64 transition-all duration-200 ease-in-out shrink-0 hidden md:flex z-10 relative">
+<div class="mb-8 hidden md:block">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Physics Seminar</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">VNM-ENG Stream</p>
+</div>
+<ul class="flex flex-col space-y-2 flex-grow">
+<!-- Active Tab -->
+<li>
+<a class="bg-secondary-container dark:bg-primary-container text-on-secondary-container dark:text-on-primary-container font-bold rounded-full flex items-center p-3 hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-label-md text-label-md hidden md:inline">Live</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full flex items-center p-3 hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">description</span>
+<span class="font-label-md text-label-md hidden md:inline">Transcript</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full flex items-center p-3 hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">edit_note</span>
+<span class="font-label-md text-label-md hidden md:inline">Notes</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-outline hover:bg-surface-variant rounded-full flex items-center p-3 hover:bg-surface-container-high dark:hover:bg-surface-container transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">auto_stories</span>
+<span class="font-label-md text-label-md hidden md:inline">Context</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto hidden md:flex items-center space-x-3 pt-4 border-t border-surface-variant">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold text-sm">
+                WS
+            </div>
+<span class="font-label-md text-label-md text-on-surface-variant">Workspace Avatar</span>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow flex flex-col h-full overflow-hidden bg-surface relative">
+<!-- Header / Metadata -->
+<header class="px-margin-desktop py-6 border-b border-surface-variant bg-surface/90 backdrop-blur-md sticky top-0 z-10 flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background mb-2">Quantum Physics Seminar</h2>
+<div class="flex items-center space-x-4 text-secondary font-label-md text-label-md">
+<span class="flex items-center text-error"><span class="w-2 h-2 rounded-full bg-error mr-2 animate-pulse"></span> Live</span>
+<span>·</span>
+<span>EN → VI</span>
+<span>·</span>
+<span class="font-code text-code">34:21</span>
+</div>
+</div>
+<div class="flex space-x-2">
+<button class="p-2 text-primary hover:bg-surface-container rounded-full transition-colors" title="Settings">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Progress Bar -->
+<div class="w-full h-1 bg-surface-variant">
+<div class="h-full bg-primary w-2/3 transition-all duration-1000 ease-linear"></div>
+</div>
+<!-- Translation Canvas -->
+<div class="flex-grow overflow-y-auto px-margin-desktop py-section-gap scroll-smooth" id="translation-container">
+<div class="max-w-3xl mx-auto space-y-8 pb-32">
+<!-- Utterance 1 -->
+<div class="translation-block group relative">
+<div class="flex flex-col space-y-1">
+<p class="text-[24px] leading-tight font-bold text-on-background font-body-ui">
+                            Vì vậy, khi chúng ta xem xét sự vướng víu lượng tử, điều quan trọng là phải hiểu rằng nó không chỉ là một cấu trúc toán học.
+                        </p>
+<p class="text-secondary font-body-ui text-[16px]">
+                            So, when we consider quantum entanglement, it's crucial to understand that it is not merely a mathematical construct.
+                        </p>
+</div>
+<!-- Action Menu (Hover) -->
+<div class="action-menu opacity-0 absolute right-0 top-0 -mt-2 -mr-16 flex flex-col space-y-1 bg-surface-container-high rounded-lg p-1 border border-surface-variant shadow-sm transition-opacity duration-200">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Bookmark"><span class="material-symbols-outlined text-[18px]">bookmark_border</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Note"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Explain"><span class="material-symbols-outlined text-[18px]">psychology</span></button>
+</div>
+</div>
+<!-- Utterance 2 -->
+<div class="translation-block group relative">
+<div class="flex flex-col space-y-1">
+<p class="text-[24px] leading-tight font-bold text-on-background font-body-ui">
+                            Đó là một hiện tượng vật lý có thể đo lường được, nơi các hạt duy trì một kết nối cơ bản bất kể khoảng cách giữa chúng.
+                        </p>
+<p class="text-secondary font-body-ui text-[16px]">
+                            It is a measurable physical phenomenon where particles maintain a fundamental connection regardless of the distance separating them.
+                        </p>
+</div>
+<div class="action-menu opacity-0 absolute right-0 top-0 -mt-2 -mr-16 flex flex-col space-y-1 bg-surface-container-high rounded-lg p-1 border border-surface-variant shadow-sm transition-opacity duration-200">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Bookmark"><span class="material-symbols-outlined text-[18px]">bookmark_border</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Note"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Explain"><span class="material-symbols-outlined text-[18px]">psychology</span></button>
+</div>
+</div>
+<!-- Utterance 3 -->
+<div class="translation-block group relative">
+<div class="flex flex-col space-y-1">
+<p class="text-[24px] leading-tight font-bold text-on-background font-body-ui">
+                            Albert Einstein nổi tiếng đã gọi điều này là "hành động ma quái ở khoảng cách xa", bởi vì nó dường như vi phạm giới hạn tốc độ cục bộ được thiết lập bởi thuyết tương đối.
+                        </p>
+<p class="text-secondary font-body-ui text-[16px]">
+                            Albert Einstein famously referred to this as "spooky action at a distance," because it seemingly violates the local speed limit established by relativity.
+                        </p>
+</div>
+<div class="action-menu opacity-0 absolute right-0 top-0 -mt-2 -mr-16 flex flex-col space-y-1 bg-surface-container-high rounded-lg p-1 border border-surface-variant shadow-sm transition-opacity duration-200">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Bookmark"><span class="material-symbols-outlined text-[18px]">bookmark_border</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Note"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-md" title="Explain"><span class="material-symbols-outlined text-[18px]">psychology</span></button>
+</div>
+</div>
+<!-- Current Partial Utterance -->
+<div class="relative mt-12 pt-6 border-t border-surface-variant/50">
+<div class="absolute -top-3 left-0 bg-surface px-2 flex items-center text-primary font-label-md text-label-md">
+<span class="w-2 h-2 rounded-full bg-primary pulse-dot mr-2"></span>
+                        Listening
+                    </div>
+<div class="flex flex-col space-y-1 opacity-70">
+<p class="text-[24px] leading-tight font-bold text-on-surface-variant font-body-ui italic">
+                            Tuy nhiên, các thí nghiệm gần đây...
+                        </p>
+<p class="text-outline font-body-ui text-[16px] italic">
+                            However, recent experiments...
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

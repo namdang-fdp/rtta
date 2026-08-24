@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aurelius Workspace - Live Translation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;family=Merriweather:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#ffd9dd",
+                        "on-secondary-container": "#666160",
+                        "secondary": "#625d5c",
+                        "primary-container": "#a6606b",
+                        "inverse-surface": "#34302c",
+                        "surface-variant": "#e9e1dc",
+                        "secondary-fixed": "#e8e1df",
+                        "primary": "#8a4853",
+                        "outline-variant": "#d7c1c3",
+                        "surface-container-high": "#efe6e2",
+                        "on-surface-variant": "#524345",
+                        "on-secondary-fixed-variant": "#4a4645",
+                        "on-primary-fixed": "#3a0915",
+                        "primary-fixed-dim": "#ffb2bc",
+                        "surface-tint": "#8c4b55",
+                        "surface-container": "#f5ece7",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#70343e",
+                        "surface-container-low": "#fbf2ed",
+                        "on-surface": "#1e1b18",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#ffb2bc",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e9e1dc",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#ccc5c3",
+                        "tertiary-fixed-dim": "#ecbbba",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#e6dedc",
+                        "on-secondary-fixed": "#1e1b1a",
+                        "tertiary-fixed": "#ffdad9",
+                        "on-primary": "#ffffff",
+                        "surface": "#fff8f5",
+                        "tertiary-container": "#936a6a",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#f8efea",
+                        "on-tertiary-container": "#fffbff",
+                        "on-background": "#1e1b18",
+                        "on-primary-container": "#fffbff",
+                        "surface-dim": "#e1d8d4",
+                        "on-tertiary-fixed-variant": "#603d3e",
+                        "background": "#fff8f5",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#fff8f5",
+                        "on-tertiary-fixed": "#2f1314",
+                        "tertiary": "#785253",
+                        "outline": "#857374"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "section-gap": "48px",
+                        "container-max-width": "1280px",
+                        "gutter": "24px",
+                        "stack-gap": "16px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Merriweather"],
+                        "headline-md": ["Merriweather"],
+                        "display-lg": ["Merriweather"],
+                        "headline-lg": ["Merriweather"],
+                        "code": ["Inter"],
+                        "body-ui": ["Inter"],
+                        "body-reading": ["Merriweather"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-ui": ["15px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-reading": ["18px", { "lineHeight": "1.8", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "label-md": ["13px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for minimalist look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--tw-colors-surface-variant);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--tw-colors-outline-variant);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden flex">
+<!-- Compact Icon Rail Navigation (SideNavBar) -->
+<nav class="bg-surface-container-low border-r border-surface-variant w-16 flex flex-col items-center py-6 h-full flex-shrink-0 z-10 transition-all duration-200 ease-in-out">
+<!-- Brand/Avatar area compact -->
+<div class="mb-8 relative group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden cursor-pointer">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<!-- Tooltip -->
+<div class="absolute left-14 top-2 bg-inverse-surface text-inverse-on-surface font-label-md text-label-md px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">
+                 Research Alpha<br/><span class="text-xs opacity-70">VNM-ENG Stream</span>
+</div>
+</div>
+<div class="flex flex-col space-y-6 w-full items-center">
+<!-- Tab: Live (Active) -->
+<button aria-label="Live" class="relative group w-10 h-10 flex items-center justify-center rounded-full bg-secondary-container text-on-secondary-container hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined icon-filled" data-icon="sensors">sensors</span>
+<div class="absolute left-14 bg-inverse-surface text-inverse-on-surface font-label-md text-label-md px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">Live</div>
+</button>
+<!-- Tab: Transcript (Inactive) -->
+<button aria-label="Transcript" class="relative group w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<div class="absolute left-14 bg-inverse-surface text-inverse-on-surface font-label-md text-label-md px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">Transcript</div>
+</button>
+<!-- Tab: Notes (Inactive) -->
+<button aria-label="Notes" class="relative group w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<div class="absolute left-14 bg-inverse-surface text-inverse-on-surface font-label-md text-label-md px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">Notes</div>
+</button>
+<!-- Tab: Context (Inactive) -->
+<button aria-label="Context" class="relative group w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+<div class="absolute left-14 bg-inverse-surface text-inverse-on-surface font-label-md text-label-md px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">Context</div>
+</button>
+</div>
+<div class="mt-auto pb-4 flex flex-col space-y-4">
+<button aria-label="Settings" class="relative group w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative bg-surface">
+<!-- Top App Bar (Compact Header) -->
+<header class="bg-surface border-b border-surface-variant h-14 flex items-center justify-between px-4 sm:px-6 flex-shrink-0 z-10 sticky top-0">
+<div class="flex items-center space-x-3">
+<div class="flex items-center">
+<span class="w-2 h-2 rounded-full bg-[#94A390] mr-2 animate-pulse"></span>
+<h1 class="font-headline-md text-headline-md text-primary font-bold text-lg leading-none">Physics Seminar</h1>
+</div>
+<span class="text-on-surface-variant text-sm font-label-md bg-surface-container px-2 py-0.5 rounded-full border border-outline-variant/30">00:42:15</span>
+</div>
+<div class="flex items-center space-x-2">
+<!-- Action Icons -->
+<button aria-label="Target Language" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined" data-icon="radio_button_checked">radio_button_checked</span>
+</button>
+<button aria-label="Timer" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined" data-icon="timer">timer</span>
+</button>
+<!-- Compact progress indicator for active processing -->
+<div class="w-24 h-1 bg-surface-variant rounded-full overflow-hidden ml-2 hidden sm:block">
+<div class="h-full bg-primary/40 rounded-full w-1/3 animate-[pulse_2s_ease-in-out_infinite]"></div>
+</div>
+</div>
+</header>
+<!-- Progress Indicator (Top of active pane) -->
+<div class="h-[2px] w-full bg-surface-variant absolute top-14 z-20">
+<div class="h-full bg-[#94A390] w-full origin-left animate-[scale-x_3s_linear_infinite]" style="animation-name: progress; animation-duration: 2s; animation-iteration-count: infinite;"></div>
+</div>
+<!-- Translation Surface (Continuous Reading) -->
+<div class="flex-1 overflow-y-auto px-4 sm:px-8 lg:px-12 py-8 pb-32 max-w-4xl mx-auto w-full relative" id="translation-container">
+<!-- Stacked Utterance Layout -->
+<div class="space-y-10">
+<!-- Utterance Block 1 -->
+<div class="group relative pb-6 border-b border-surface-variant/40 hover:border-surface-variant transition-colors duration-300">
+<!-- Context Actions (Hidden until hover) -->
+<div class="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 bg-surface/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant/20 shadow-sm z-10">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Add Note">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Copy">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+<div class="flex flex-col space-y-2">
+<!-- Source (Vietnamese) - Large, Dominant, Legible Sans-serif -->
+<div class="text-[22px] leading-[1.6] font-body-ui font-medium text-on-surface tracking-tight pr-12">
+                            Chúng ta cần xem xét lại mô hình chuyển động của hạt trong không gian đa chiều, đặc biệt là khi áp dụng các biến đổi phi tuyến.
+                        </div>
+<!-- Translation (English) - Muted Reference Sans-serif -->
+<div class="text-[16px] leading-[1.5] font-body-ui text-on-surface-variant/80 pl-4 border-l-2 border-primary/20">
+                            We need to reconsider the particle motion model in multidimensional space, especially when applying nonlinear transformations.
+                        </div>
+</div>
+</div>
+<!-- Utterance Block 2 -->
+<div class="group relative pb-6 border-b border-surface-variant/40 hover:border-surface-variant transition-colors duration-300">
+<div class="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 bg-surface/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant/20 shadow-sm z-10">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Add Note">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Copy">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+<div class="flex flex-col space-y-2">
+<!-- Source (Vietnamese) -->
+<div class="text-[22px] leading-[1.6] font-body-ui font-medium text-on-surface tracking-tight pr-12">
+                            Theo phương trình Schrödinger, xác suất tìm thấy hạt tại một điểm bất kỳ phụ thuộc vào bình phương biên độ của hàm sóng.
+                        </div>
+<!-- Translation (English) -->
+<div class="text-[16px] leading-[1.5] font-body-ui text-on-surface-variant/80 pl-4 border-l-2 border-primary/20">
+                            According to the Schrödinger equation, the probability of finding a particle at any point depends on the square of the amplitude of the wave function.
+                        </div>
+</div>
+</div>
+<!-- Utterance Block 3 (Active/Streaming) -->
+<div class="group relative pb-6 border-b border-surface-variant/40 transition-colors duration-300">
+<div class="absolute -left-6 top-2 w-1.5 h-1.5 rounded-full bg-[#94A390] animate-pulse"></div>
+<div class="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 bg-surface/90 backdrop-blur-sm p-1 rounded-lg border border-outline-variant/20 shadow-sm z-10">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded transition-colors" title="Add Note">
+<span class="material-symbols-outlined text-[18px]">edit_note</span>
+</button>
+</div>
+<div class="flex flex-col space-y-2">
+<!-- Source (Vietnamese) - Active -->
+<div class="text-[22px] leading-[1.6] font-body-ui font-medium text-on-surface tracking-tight pr-12">
+                            Vì vậy, nếu chúng ta giới thiệu một nhiễu loạn nhỏ vào hệ thống, điều gì sẽ xảy ra với các trạng thái năng lượng... <span class="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-ping align-middle"></span>
+</div>
+<!-- Translation (English) - Active/Generating -->
+<div class="text-[16px] leading-[1.5] font-body-ui text-on-surface-variant/80 pl-4 border-l-2 border-primary/20 opacity-80">
+                            Therefore, if we introduce a small perturbation into the system, what happens to the energy states...
+                        </div>
+</div>
+</div>
+</div>
+<!-- Bottom Fade for reading comfort -->
+<div class="fixed bottom-0 left-16 right-0 h-24 bg-gradient-to-t from-surface to-transparent pointer-events-none"></div>
+</div>
+</main>
+<style>
+        @keyframes progress {
+            0% { transform: scaleX(0); transform-origin: left; }
+            50% { transform: scaleX(1); transform-origin: left; }
+            50.1% { transform: scaleX(1); transform-origin: right; }
+            100% { transform: scaleX(0); transform-origin: right; }
+        }
+    </style>
+<script>
+        // Auto-scroll to bottom behavior simulation for live view
+        const container = document.getElementById('translation-container');
+        if(container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    </script>
+</body></html>

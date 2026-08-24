@@ -1,0 +1,162 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-merriweather);
+  --font-heading: var(--font-merriweather);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-soft: var(--surface-soft);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+:root {
+  --background: #fff8f5;
+  --foreground: #211d1a;
+  --card: #fffdfb;
+  --card-foreground: #211d1a;
+  --popover: #fffdfb;
+  --popover-foreground: #211d1a;
+  --primary: #914b58;
+  --primary-foreground: #fffdfb;
+  --secondary: #e9dfdc;
+  --secondary-foreground: #55484a;
+  --muted: #f4ebe7;
+  --muted-foreground: #75686a;
+  --accent: #f1e2e1;
+  --accent-foreground: #70343e;
+  --destructive: #b42318;
+  --border: #dfcecc;
+  --input: #dfcecc;
+  --ring: #a6606b;
+  --success: #8fa28d;
+  --surface-raised: #fffdfb;
+  --surface-soft: #fbf2ed;
+  --radius: 0.5rem;
+  --sidebar: #fbf2ed;
+  --sidebar-foreground: #524345;
+  --sidebar-primary: #914b58;
+  --sidebar-primary-foreground: #fffdfb;
+  --sidebar-accent: #e8dfdc;
+  --sidebar-accent-foreground: #524345;
+  --sidebar-border: #e4d8d4;
+  --sidebar-ring: #a6606b;
+}
+
+.dark {
+  --background: #1a1817;
+  --foreground: #f8efea;
+  --card: #2a2726;
+  --card-foreground: #f8efea;
+  --popover: #2a2726;
+  --popover-foreground: #f8efea;
+  --primary: #d89aa3;
+  --primary-foreground: #351016;
+  --secondary: #3a3432;
+  --secondary-foreground: #f3e8e4;
+  --muted: #302b29;
+  --muted-foreground: #c7b8b4;
+  --accent: #493536;
+  --accent-foreground: #ffe8eb;
+  --destructive: #ffb4ab;
+  --border: #4b4340;
+  --input: #4b4340;
+  --ring: #d89aa3;
+  --success: #a8b8a5;
+  --surface-raised: #2a2726;
+  --surface-soft: #24211f;
+  --sidebar: #211e1d;
+  --sidebar-foreground: #e8ddda;
+  --sidebar-primary: #d89aa3;
+  --sidebar-primary-foreground: #351016;
+  --sidebar-accent: #3a3432;
+  --sidebar-accent-foreground: #f3e8e4;
+  --sidebar-border: #433c39;
+  --sidebar-ring: #d89aa3;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+}
+
+@layer utilities {
+  .editorial-title {
+    @apply font-serif tracking-[-0.025em];
+  }
+
+  .reading-column {
+    text-wrap: pretty;
+  }
+
+  .quiet-scrollbar {
+    scrollbar-color: color-mix(in srgb, var(--border) 75%, transparent) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
