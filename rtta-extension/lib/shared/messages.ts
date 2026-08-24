@@ -1,4 +1,9 @@
 import type { CaptureMetrics } from "../audio/metrics";
+import {
+  createBackendState,
+  isBackendState,
+  type BackendState,
+} from "../transport/state";
 
 export const CAPTURE_MESSAGE = {
   START: "rtta:capture/start",
@@ -20,6 +25,7 @@ export type CapturePhase =
 
 export interface CaptureState {
   readonly phase: CapturePhase;
+  readonly backend: BackendState;
   readonly tabId: number | null;
   readonly metrics: CaptureMetrics | null;
   readonly error: string | null;
@@ -60,10 +66,12 @@ export function createCaptureState(
     readonly tabId?: number | null;
     readonly metrics?: CaptureMetrics | null;
     readonly error?: string | null;
+    readonly backend?: BackendState;
   } = {},
 ): CaptureState {
   return {
     phase,
+    backend: options.backend ?? createBackendState("disconnected"),
     tabId: options.tabId ?? null,
     metrics: options.metrics ?? null,
     error: options.error ?? null,
@@ -128,6 +136,7 @@ export function isCaptureState(value: unknown): value is CaptureState {
 
   return (
     isCapturePhase(value.phase) &&
+    isBackendState(value.backend) &&
     (value.tabId === null || typeof value.tabId === "number") &&
     (value.metrics === null || isCaptureMetrics(value.metrics)) &&
     (value.error === null || typeof value.error === "string") &&

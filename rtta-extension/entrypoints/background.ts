@@ -8,6 +8,7 @@ import {
   type CaptureRuntimeMessage,
   type CaptureState,
 } from "../lib/shared/messages";
+import { createBackendState } from "../lib/transport/state";
 
 const OFFSCREEN_DOCUMENT_PATH = "offscreen.html";
 
@@ -142,7 +143,11 @@ export default defineBackground(() => {
         return { ok: false, state: currentState, error: message };
       }
 
-      updateState(createCaptureState("starting"));
+      updateState(
+        createCaptureState("starting", {
+          backend: createBackendState("connecting"),
+        }),
+      );
 
       const [activeTab] = await chrome.tabs.query({
         active: true,
@@ -159,7 +164,12 @@ export default defineBackground(() => {
       }
 
       const tabId = activeTab.id;
-      updateState(createCaptureState("starting", { tabId }));
+      updateState(
+        createCaptureState("starting", {
+          tabId,
+          backend: createBackendState("connecting"),
+        }),
+      );
 
       const streamId = await chrome.tabCapture.getMediaStreamId({
         targetTabId: tabId,
@@ -219,6 +229,10 @@ export default defineBackground(() => {
         createCaptureState("stopping", {
           tabId: captureState.tabId,
           metrics: captureState.metrics,
+          backend: createBackendState(
+            "stopping",
+            captureState.backend.bufferedBytes,
+          ),
         }),
       );
 
@@ -237,6 +251,7 @@ export default defineBackground(() => {
       captureState = createCaptureState("error", {
         metrics: captureState.metrics,
         error: message,
+        backend: captureState.backend,
       });
       void broadcastState(captureState);
       return { ok: false, state: captureState, error: message };

@@ -5,14 +5,14 @@ spring:
     import: optional:file:.env[.properties]
   main:
     banner-mode: off
-    web-application-type: none
 
 logging:
   level:
     root: WARN
+    com.rtta.dorriss.audio: INFO
 
 spike:
-  enabled: true
+  enabled: false
   speech:
     key: ${SPEECH_KEY:}
     endpoint: ${SPEECH_ENDPOINT:https://koreacentral.api.cognitive.microsoft.com/}

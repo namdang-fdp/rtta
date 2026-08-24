@@ -27,7 +27,7 @@ function formatElapsed(elapsedMs: number): string {
 function phaseLabel(state: CaptureState | null): string {
   switch (state?.phase) {
     case "capturing":
-      return "Capturing";
+      return "Streaming";
     case "error":
       return "Error";
     case "starting":
@@ -36,6 +36,21 @@ function phaseLabel(state: CaptureState | null): string {
       return "Stopping";
     default:
       return "Ready";
+  }
+}
+
+function backendLabel(state: CaptureState | null): string {
+  switch (state?.backend.phase) {
+    case "connected":
+      return "Connected";
+    case "connecting":
+      return "Connecting";
+    case "error":
+      return "Error";
+    case "stopping":
+      return "Stopping";
+    default:
+      return "Disconnected";
   }
 }
 
@@ -117,6 +132,7 @@ function App() {
     captureState?.phase === "starting" || captureState?.phase === "stopping";
   const buttonDisabled = captureState === null || commandPending || transitioning;
   const levelPercent = Math.min(100, (metrics?.level ?? 0) * 400);
+  const backendConnected = captureState?.backend.phase === "connected";
 
   async function sendCommand(
     type: typeof CAPTURE_MESSAGE.START | typeof CAPTURE_MESSAGE.STOP,
@@ -159,19 +175,44 @@ function App() {
         </span>
         <div>
           <h1 className="text-xl font-semibold tracking-tight">RTTA</h1>
-          <p className="text-xs text-pink-700">Local tab audio capture</p>
+          <p className="text-xs text-pink-700">Local tab audio streaming</p>
         </div>
       </header>
 
       <section className="mt-5 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Status</span>
+          <span className="text-sm font-medium">Capture</span>
           <span
             className="inline-flex items-center gap-2 text-sm text-pink-700"
             aria-live="polite"
           >
             <span className={`size-2 rounded-full ${statusTone}`} aria-hidden="true" />
             {phaseLabel(captureState)}
+          </span>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between rounded-xl bg-pink-50 px-3 py-2 text-xs">
+          <span className="text-pink-600">Backend</span>
+          <span className="flex items-center gap-2 font-medium text-pink-800">
+            <span
+              className={`size-2 rounded-full ${
+                captureState?.backend.phase === "error"
+                  ? "bg-rose-500"
+                  : backendConnected
+                    ? "bg-emerald-500"
+                    : captureState?.backend.phase === "connecting" ||
+                        captureState?.backend.phase === "stopping"
+                      ? "bg-amber-400"
+                      : "bg-pink-300"
+              }`}
+              aria-hidden="true"
+            />
+            {backendLabel(captureState)}
+            {backendConnected ? (
+              <span className="font-normal tabular-nums text-pink-600">
+                {(captureState.backend.bufferedBytes / 1_000).toFixed(1)} KB
+              </span>
+            ) : null}
           </span>
         </div>
 
@@ -226,7 +267,7 @@ function App() {
           </div>
         ) : (
           <div className="mt-4 rounded-xl bg-pink-100 px-3 py-2 text-center text-xs font-medium text-pink-700">
-            16 kHz · mono · signed 16-bit PCM · local only
+            16 kHz · mono · signed 16-bit PCM · raw WebSocket
           </div>
         )}
 

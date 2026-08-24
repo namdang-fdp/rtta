@@ -8,6 +8,9 @@ import {
   PCM_TARGET_SAMPLE_RATE,
   PCM_WORKLET_PROCESSOR_NAME,
 } from "../../lib/audio/pcm";
+import { AudioWebSocketTransport } from "../../lib/transport/audio-websocket";
+import { resolveBackendWebSocketUrl } from "../../lib/transport/protocol";
+import { createBackendState } from "../../lib/transport/state";
 import {
   CAPTURE_MESSAGE,
   createCaptureState,
@@ -34,6 +37,7 @@ interface PcmChunkMessage {
 }
 
 interface CaptureSession {
+  readonly sessionId: string;
   readonly tabId: number;
   readonly stream: MediaStream;
   readonly audioContext: AudioContext;
@@ -41,6 +45,7 @@ interface CaptureSession {
   readonly workletNode: AudioWorkletNode;
   readonly silentGainNode: GainNode;
   readonly metrics: CaptureMetricsAccumulator;
+  readonly transport: AudioWebSocketTransport;
   readonly trackEndHandlers: ReadonlyMap<MediaStreamTrack, () => void>;
   diagnosticsTimer: number;
   endingIntentionally: boolean;
@@ -81,6 +86,7 @@ class OffscreenCaptureController {
     return createCaptureState("capturing", {
       tabId: this.session.tabId,
       metrics: this.session.metrics.snapshot(performance.now()),
+      backend: this.session.transport.getState(),
     });
   }
 
@@ -95,15 +101,42 @@ class OffscreenCaptureController {
       return { ok: false, state: this.getState(), error: message };
     }
 
-    this.setState(createCaptureState("starting", { tabId }));
+    this.setState(
+      createCaptureState("starting", {
+        tabId,
+        backend: createBackendState("connecting"),
+      }),
+    );
 
     let stream: MediaStream | null = null;
     let audioContext: AudioContext | null = null;
     let sourceNode: MediaStreamAudioSourceNode | null = null;
     let workletNode: AudioWorkletNode | null = null;
     let silentGainNode: GainNode | null = null;
+    let transport: AudioWebSocketTransport | null = null;
+    let transportFailure: string | null = null;
 
     try {
+      const sessionId = crypto.randomUUID();
+      const backendUrl = resolveBackendWebSocketUrl(
+        import.meta.env.WXT_BACKEND_WS_URL,
+      );
+      transport = new AudioWebSocketTransport(backendUrl, (message) => {
+        const activeSession = this.session;
+        if (activeSession !== null && activeSession.transport === transport) {
+          void this.handleUnexpectedEnd(activeSession, message, true);
+        } else {
+          transportFailure = message;
+        }
+      });
+      await transport.connect(sessionId);
+      this.setState(
+        createCaptureState("starting", {
+          tabId,
+          backend: transport.getState(),
+        }),
+      );
+
       const audioConstraints: ChromeTabAudioConstraints = {
         mandatory: {
           chromeMediaSource: "tab",
@@ -115,6 +148,9 @@ class OffscreenCaptureController {
         audio: audioConstraints,
         video: false,
       });
+      if (transportFailure !== null) {
+        throw new Error(transportFailure);
+      }
 
       const audioTracks = stream.getAudioTracks();
       if (audioTracks.length === 0) {
@@ -125,6 +161,9 @@ class OffscreenCaptureController {
       await audioContext.audioWorklet.addModule(
         chrome.runtime.getURL("audio-worklet.js"),
       );
+      if (transportFailure !== null) {
+        throw new Error(transportFailure);
+      }
 
       sourceNode = audioContext.createMediaStreamSource(stream);
       workletNode = new AudioWorkletNode(
@@ -161,6 +200,19 @@ class OffscreenCaptureController {
           emittedAtMs: event.data.emittedAtMs,
           observedAtMs: performance.now(),
         });
+
+        try {
+          transport?.sendPcm(event.data.pcm);
+        } catch (error) {
+          const activeSession = this.session;
+          if (activeSession !== null && activeSession.transport === transport) {
+            void this.handleUnexpectedEnd(
+              activeSession,
+              errorMessage(error, "Unable to stream PCM to the backend."),
+              true,
+            );
+          }
+        }
       };
 
       // tabCapture suppresses normal tab playback. This direct branch restores it.
@@ -175,10 +227,20 @@ class OffscreenCaptureController {
       if (audioContext.state !== "running") {
         throw new Error("The tab audio context could not be started.");
       }
+      if (
+        transportFailure !== null ||
+        transport.getState().phase !== "connected"
+      ) {
+        throw new Error(
+          transportFailure ??
+            "The backend disconnected while capture was starting.",
+        );
+      }
 
       const trackEndHandlers = new Map<MediaStreamTrack, () => void>();
 
       const session: CaptureSession = {
+        sessionId,
         tabId,
         stream,
         audioContext,
@@ -186,6 +248,7 @@ class OffscreenCaptureController {
         workletNode,
         silentGainNode,
         metrics,
+        transport,
         trackEndHandlers,
         diagnosticsTimer: 0,
         endingIntentionally: false,
@@ -196,6 +259,7 @@ class OffscreenCaptureController {
         void this.handleUnexpectedEnd(
           session,
           "The AudioWorklet processor stopped unexpectedly.",
+          false,
         );
       };
 
@@ -204,6 +268,7 @@ class OffscreenCaptureController {
           void this.handleUnexpectedEnd(
             session,
             "The captured tab audio stream ended unexpectedly.",
+            false,
           );
         };
         trackEndHandlers.set(track, handleEnded);
@@ -218,17 +283,22 @@ class OffscreenCaptureController {
         createCaptureState("capturing", {
           tabId,
           metrics: metrics.snapshot(performance.now()),
+          backend: transport.getState(),
         }),
       );
 
       return { ok: true, state: this.state };
     } catch (error) {
+      const backendFailed =
+        transport === null || transport.getState().phase === "error";
+      const bufferedBytes = transport?.getState().bufferedBytes ?? 0;
       await this.disposePartialResources({
         stream,
         audioContext,
         sourceNode,
         workletNode,
         silentGainNode,
+        transport,
       });
       this.session = null;
 
@@ -236,7 +306,14 @@ class OffscreenCaptureController {
         error,
         "Unable to initialize tab audio processing.",
       );
-      this.setState(createCaptureState("error", { error: message }));
+      this.setState(
+        createCaptureState("error", {
+          error: message,
+          backend: backendFailed
+            ? createBackendState("error", bufferedBytes)
+            : createBackendState("disconnected"),
+        }),
+      );
       return { ok: false, state: this.state, error: message };
     }
   }
@@ -252,18 +329,27 @@ class OffscreenCaptureController {
       createCaptureState("stopping", {
         tabId: session.tabId,
         metrics: session.metrics.snapshot(performance.now()),
+        backend: createBackendState(
+          "stopping",
+          session.transport.getState().bufferedBytes,
+        ),
       }),
     );
 
     try {
-      await this.disposeSession(session);
+      await this.disposeSession(session, true);
       this.session = null;
       this.setState(createCaptureState("ready"));
       return { ok: true, state: this.state };
     } catch (error) {
       this.session = null;
       const message = errorMessage(error, "Unable to cleanly stop capture.");
-      this.setState(createCaptureState("error", { error: message }));
+      this.setState(
+        createCaptureState("error", {
+          error: message,
+          backend: createBackendState("error"),
+        }),
+      );
       return { ok: false, state: this.state, error: message };
     }
   }
@@ -279,6 +365,7 @@ class OffscreenCaptureController {
       createCaptureState("capturing", {
         tabId: session.tabId,
         metrics,
+        backend: session.transport.getState(),
       }),
     );
   }
@@ -286,14 +373,16 @@ class OffscreenCaptureController {
   private async handleUnexpectedEnd(
     session: CaptureSession,
     message: string,
+    backendFailed: boolean,
   ): Promise<void> {
     if (this.session !== session || session.endingIntentionally) {
       return;
     }
 
     const finalMetrics = session.metrics.snapshot(performance.now());
+    const finalBufferedBytes = session.transport.getState().bufferedBytes;
     try {
-      await this.disposeSession(session);
+      await this.disposeSession(session, !backendFailed);
     } catch (error) {
       console.warn(
         "[RTTA] Capture ended and cleanup reported an error:",
@@ -305,11 +394,17 @@ class OffscreenCaptureController {
       createCaptureState("error", {
         metrics: finalMetrics,
         error: message,
+        backend: backendFailed
+          ? createBackendState("error", finalBufferedBytes)
+          : createBackendState("disconnected"),
       }),
     );
   }
 
-  private async disposeSession(session: CaptureSession): Promise<void> {
+  private async disposeSession(
+    session: CaptureSession,
+    stopBackendCleanly: boolean,
+  ): Promise<void> {
     const cleanupErrors: unknown[] = [];
     session.endingIntentionally = true;
     window.clearInterval(session.diagnosticsTimer);
@@ -345,6 +440,17 @@ class OffscreenCaptureController {
       }
     }
 
+    try {
+      if (stopBackendCleanly) {
+        await session.transport.stop();
+      } else {
+        session.transport.closeImmediately();
+      }
+    } catch (error) {
+      cleanupErrors.push(error);
+      session.transport.closeImmediately();
+    }
+
     if (cleanupErrors.length > 0) {
       throw new Error(
         errorMessage(cleanupErrors[0], "One or more audio resources did not close."),
@@ -358,6 +464,7 @@ class OffscreenCaptureController {
     readonly sourceNode: MediaStreamAudioSourceNode | null;
     readonly workletNode: AudioWorkletNode | null;
     readonly silentGainNode: GainNode | null;
+    readonly transport: AudioWebSocketTransport | null;
   }): Promise<void> {
     const cleanupErrors: unknown[] = [];
     attemptCleanup(
@@ -381,6 +488,15 @@ class OffscreenCaptureController {
         await resources.audioContext.close();
       } catch (error) {
         cleanupErrors.push(error);
+      }
+    }
+
+    if (resources.transport !== null) {
+      try {
+        await resources.transport.stop();
+      } catch (error) {
+        cleanupErrors.push(error);
+        resources.transport.closeImmediately();
       }
     }
 
