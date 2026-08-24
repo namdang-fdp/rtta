@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useTranscriptHistory } from "@/hooks/use-transcript-history"
+import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { formatOffset } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 interface TranscriptPageProps {
   meetingId?: string
@@ -24,6 +26,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
   const [query, setQuery] = useState("")
   const deferredQuery = useDeferredValue(query.trim())
   const history = useTranscriptHistory(meetingId, deferredQuery)
+  const bookmarks = useMeetingBookmarks(history.resolvedMeetingId)
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
@@ -74,6 +77,13 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
 
       <div className="quiet-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 md:px-8 xl:px-10">
         <div className="mx-auto max-w-4xl space-y-10 pb-24" aria-live="polite">
+          {bookmarks.error ? (
+            <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1">{bookmarks.error}</span>
+              <Button variant="ghost" size="sm" onClick={bookmarks.clearError}>Dismiss</Button>
+            </div>
+          ) : null}
           {history.loading ? (
             <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
               <LoaderCircle className="size-5 animate-spin text-primary" />
@@ -116,8 +126,16 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                     </div>
 
                     <div className="flex gap-1 sm:absolute sm:-right-1 sm:top-0 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-                      <Button variant="ghost" size="icon-sm" disabled aria-label="Bookmark support is coming next">
-                        <Bookmark />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => void bookmarks.toggle({ id: utterance.id, offsetMs: utterance.offsetMs })}
+                        disabled={bookmarks.pendingIds.has(utterance.id)}
+                        aria-label={bookmarks.bookmarkedIds.has(utterance.id) ? "Remove bookmark" : "Bookmark utterance"}
+                        aria-pressed={bookmarks.bookmarkedIds.has(utterance.id)}
+                        className={bookmarks.bookmarkedIds.has(utterance.id) ? "bg-accent text-primary" : "text-muted-foreground"}
+                      >
+                        <Bookmark className={cn(bookmarks.bookmarkedIds.has(utterance.id) && "fill-current")} />
                       </Button>
                       <Button variant="ghost" size="icon-sm" disabled aria-label="Research notes are coming next">
                         <NotebookPen />

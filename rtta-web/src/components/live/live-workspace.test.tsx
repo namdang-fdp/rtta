@@ -9,6 +9,7 @@ const actions = {
   setFollowLive: vi.fn(),
   clearError: vi.fn(),
   bookmarkedIds: new Set<string>(),
+  pendingBookmarkIds: new Set<string>(),
   notedIds: new Set<string>(),
   onBookmark: vi.fn(),
   onNote: vi.fn(),
@@ -16,6 +17,8 @@ const actions = {
   explanationOpen: false,
   dockExplanation: false,
   closeExplanation: vi.fn(),
+  bookmarkError: null,
+  clearBookmarkError: vi.fn(),
 }
 
 function renderState(state: LiveMeetingState) {

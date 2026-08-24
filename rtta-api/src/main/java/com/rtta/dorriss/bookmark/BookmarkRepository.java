@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, UUID> {
 
-	List<Bookmark> findAllByMeetingIdOrderByCreatedAtAscIdAsc(UUID meetingId);
+	List<Bookmark> findAllByMeetingIdOrderByOffsetMsAscCreatedAtAscIdAsc(UUID meetingId);
 
 	Optional<Bookmark> findByIdAndMeetingId(UUID id, UUID meetingId);
 

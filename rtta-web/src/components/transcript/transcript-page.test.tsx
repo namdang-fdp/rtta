@@ -3,12 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { TranscriptPage } from "@/components/transcript/transcript-page"
 import { getMeeting, getTranscript, listMeetings } from "@/lib/api/meetings"
+import { createBookmark, deleteBookmark, listBookmarks } from "@/lib/api/bookmarks"
 import type { MeetingDto, TranscriptUtteranceDto } from "@/types/api"
 
 vi.mock("@/lib/api/meetings", () => ({
   getMeeting: vi.fn(),
   getTranscript: vi.fn(),
   listMeetings: vi.fn(),
+}))
+
+vi.mock("@/lib/api/bookmarks", () => ({
+  createBookmark: vi.fn(),
+  deleteBookmark: vi.fn(),
+  listBookmarks: vi.fn(),
 }))
 
 const meeting: MeetingDto = {
@@ -41,6 +48,10 @@ const utterance: TranscriptUtteranceDto = {
 
 describe("TranscriptPage", () => {
   beforeEach(() => {
+    vi.mocked(createBookmark).mockReset()
+    vi.mocked(deleteBookmark).mockReset()
+    vi.mocked(listBookmarks).mockReset()
+    vi.mocked(listBookmarks).mockResolvedValue([])
     vi.mocked(listMeetings).mockResolvedValue({
       items: [meeting], page: 0, size: 1, totalItems: 1, totalPages: 1,
     })
@@ -48,6 +59,55 @@ describe("TranscriptPage", () => {
     vi.mocked(getTranscript).mockResolvedValue({
       items: [utterance], page: 0, size: 100, totalItems: 1, totalPages: 1,
     })
+  })
+
+  it("restores persisted bookmark state after a fresh render", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([{
+      id: "bookmark-existing",
+      meetingId: meeting.id,
+      utteranceId: utterance.id,
+      offsetMs: utterance.offsetMs,
+      label: null,
+      createdAt: "2026-08-25T00:01:05Z",
+      metadata: null,
+    }])
+
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("rolls back an optimistic bookmark when persistence fails", async () => {
+    vi.mocked(createBookmark).mockRejectedValue(new Error("The bookmark could not be saved."))
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Bookmark utterance" }))
+
+    expect(await screen.findByRole("button", { name: "Bookmark utterance" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByText("The bookmark could not be saved.")).toBeInTheDocument()
+  })
+
+  it("persists a bookmark and reflects the saved state", async () => {
+    vi.mocked(createBookmark).mockResolvedValue({
+      id: "bookmark-1",
+      meetingId: meeting.id,
+      utteranceId: utterance.id,
+      offsetMs: utterance.offsetMs,
+      label: null,
+      createdAt: "2026-08-25T00:01:05Z",
+      metadata: null,
+    })
+    vi.mocked(deleteBookmark).mockResolvedValue()
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    const button = await screen.findByRole("button", { name: "Bookmark utterance" })
+    fireEvent.click(button)
+
+    await waitFor(() => expect(createBookmark).toHaveBeenCalledWith(meeting.id, {
+      utteranceId: utterance.id,
+      offsetMs: utterance.offsetMs,
+    }))
+    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("renders persisted Vietnamese primary and English secondary transcript data", async () => {

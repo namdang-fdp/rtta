@@ -14,6 +14,7 @@ interface LiveTranslationSurfaceProps {
   followLive: boolean
   onFollowLiveChange: (followLive: boolean) => void
   bookmarkedIds: Set<string>
+  pendingBookmarkIds: Set<string>
   notedIds: Set<string>
   onBookmark: (utterance: TranslationUtterance) => void
   onNote: (utterance: TranslationUtterance) => void
@@ -26,6 +27,7 @@ export function LiveTranslationSurface({
   followLive,
   onFollowLiveChange,
   bookmarkedIds,
+  pendingBookmarkIds,
   notedIds,
   onBookmark,
   onNote,
@@ -62,6 +64,7 @@ export function LiveTranslationSurface({
                 key={utterance.id}
                 utterance={utterance}
                 bookmarked={bookmarkedIds.has(utterance.id)}
+                bookmarkPending={pendingBookmarkIds.has(utterance.id)}
                 noted={notedIds.has(utterance.id)}
                 onBookmark={() => onBookmark(utterance)}
                 onNote={() => onNote(utterance)}
@@ -115,6 +118,7 @@ export function LiveTranslationSurface({
 interface FinalUtteranceProps {
   utterance: TranslationUtterance
   bookmarked: boolean
+  bookmarkPending: boolean
   noted: boolean
   onBookmark: () => void
   onNote: () => void
@@ -124,6 +128,7 @@ interface FinalUtteranceProps {
 function FinalUtterance({
   utterance,
   bookmarked,
+  bookmarkPending,
   noted,
   onBookmark,
   onNote,
@@ -158,7 +163,8 @@ function FinalUtterance({
           variant="ghost"
           size="icon-sm"
           onClick={onBookmark}
-          aria-label={bookmarked ? "Remove local bookmark" : "Bookmark utterance locally"}
+          disabled={!utterance.utteranceId || bookmarkPending}
+          aria-label={bookmarked ? "Remove bookmark" : "Bookmark utterance"}
           aria-pressed={bookmarked}
           className={bookmarked ? "bg-accent text-primary" : "text-muted-foreground"}
         >

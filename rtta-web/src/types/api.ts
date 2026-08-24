@@ -35,3 +35,13 @@ export interface TranscriptUtteranceDto {
   createdAt: string
   providerMetadata: Record<string, unknown> | null
 }
+
+export interface BookmarkDto {
+  id: string
+  meetingId: string
+  utteranceId: string | null
+  offsetMs: number | null
+  label: string | null
+  createdAt: string
+  metadata: Record<string, unknown> | null
+}

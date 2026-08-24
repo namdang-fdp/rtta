@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet"
 import { useLiveMeeting } from "@/hooks/use-live-meeting"
 import { useLocalMeetingActions } from "@/hooks/use-local-meeting-actions"
+import { useMeetingBookmarks } from "@/hooks/use-meeting-bookmarks"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { formatElapsed } from "@/lib/format"
 import type { LiveMeetingState, TranslationUtterance } from "@/types/live"
@@ -23,6 +24,7 @@ import type { LiveMeetingState, TranslationUtterance } from "@/types/live"
 export function LiveWorkspace() {
   const { setFollowLive, clearError, ...state } = useLiveMeeting()
   const actions = useLocalMeetingActions()
+  const bookmarks = useMeetingBookmarks(state.activeMeetingId)
   const useDockedConceptPanel = useMediaQuery("(min-width: 1320px)")
   const notedIds = useMemo(() => new Set(Object.keys(actions.noteDrafts)), [actions.noteDrafts])
 
@@ -32,14 +34,21 @@ export function LiveWorkspace() {
         state={state}
         setFollowLive={setFollowLive}
         clearError={clearError}
-        bookmarkedIds={actions.bookmarkedIds}
+        bookmarkedIds={bookmarks.bookmarkedIds}
+        pendingBookmarkIds={bookmarks.pendingIds}
         notedIds={notedIds}
-        onBookmark={actions.toggleBookmark}
+        onBookmark={(utterance) => {
+          if (utterance.utteranceId) {
+            void bookmarks.toggle({ id: utterance.utteranceId, offsetMs: utterance.offsetMs })
+          }
+        }}
         onNote={actions.openNote}
         onExplain={actions.openExplanation}
         explanationOpen={Boolean(actions.explanationTarget)}
         dockExplanation={useDockedConceptPanel}
         closeExplanation={actions.closeExplanation}
+        bookmarkError={bookmarks.error}
+        clearBookmarkError={bookmarks.clearError}
       />
 
       <NoteComposerSheet
@@ -58,6 +67,7 @@ interface LiveWorkspaceViewProps {
   setFollowLive: (followLive: boolean) => void
   clearError: () => void
   bookmarkedIds: Set<string>
+  pendingBookmarkIds: Set<string>
   notedIds: Set<string>
   onBookmark: (utterance: TranslationUtterance) => void
   onNote: (utterance: TranslationUtterance) => void
@@ -65,6 +75,8 @@ interface LiveWorkspaceViewProps {
   explanationOpen: boolean
   dockExplanation: boolean
   closeExplanation: () => void
+  bookmarkError: string | null
+  clearBookmarkError: () => void
 }
 
 export function LiveWorkspaceView({
@@ -72,6 +84,7 @@ export function LiveWorkspaceView({
   setFollowLive,
   clearError,
   bookmarkedIds,
+  pendingBookmarkIds,
   notedIds,
   onBookmark,
   onNote,
@@ -79,6 +92,8 @@ export function LiveWorkspaceView({
   explanationOpen,
   dockExplanation,
   closeExplanation,
+  bookmarkError,
+  clearBookmarkError,
 }: LiveWorkspaceViewProps) {
   const elapsed = useMeetingElapsed(state.sessionStartedAt, state.sessionState === "live")
   const showLiveCanvas = state.sessionState === "live"
@@ -96,6 +111,16 @@ export function LiveWorkspaceView({
             <CircleAlert className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{state.lastError}</span>
             <Button variant="ghost" size="icon-xs" onClick={clearError} aria-label="Dismiss error">
+              <X />
+            </Button>
+          </div>
+        ) : null}
+
+        {bookmarkError ? (
+          <div className="flex shrink-0 items-center gap-3 border-b border-destructive/20 bg-destructive/7 px-4 py-2.5 text-sm text-destructive md:px-8">
+            <CircleAlert className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{bookmarkError}</span>
+            <Button variant="ghost" size="icon-xs" onClick={clearBookmarkError} aria-label="Dismiss bookmark error">
               <X />
             </Button>
           </div>
@@ -124,6 +149,7 @@ export function LiveWorkspaceView({
             followLive={state.followLive}
             onFollowLiveChange={setFollowLive}
             bookmarkedIds={bookmarkedIds}
+            pendingBookmarkIds={pendingBookmarkIds}
             notedIds={notedIds}
             onBookmark={onBookmark}
             onNote={onNote}
