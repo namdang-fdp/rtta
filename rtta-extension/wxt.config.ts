@@ -7,6 +7,7 @@ export default defineConfig({
   manifest: {
     name: "RTTA",
     description: "Real-Time Translation AI for Chrome.",
+    minimum_chrome_version: "116",
     permissions: ["activeTab", "offscreen", "tabCapture"],
   },
   vite: () => ({

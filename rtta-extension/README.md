@@ -15,5 +15,6 @@ Development:
 pnpm install
 pnpm dev
 pnpm compile
+pnpm test
 pnpm build
 ```
