@@ -14,7 +14,7 @@ bun run dev
 
 Open <http://localhost:3000>. The default socket URL is `ws://localhost:8080/ws/live`; override it with `NEXT_PUBLIC_RTTA_LIVE_WS_URL` when needed.
 
-No Azure key or other provider secret belongs in this application. Only the public live WebSocket URL is exposed to the browser.
+No Azure, Gemini, database, or MinIO credential belongs in this application. Only the public backend HTTP and live WebSocket URLs are exposed to the browser.
 
 ## Quality checks
 
@@ -25,12 +25,14 @@ bun run test
 bun run build
 ```
 
-## S05 routes
+## Workspace routes
 
-- `/` — real live translation workspace with reconnect and auto-follow behavior
-- `/transcript` — demo transcript foundation
-- `/notes` — notes foundation and empty state
-- `/context` — static research context foundation
-- `/meetings/completed` — demo completed-meeting future state
+- `/` — live translation, bookmark, note, Explain, and recording controls
+- `/transcript`, `/notes`, `/context` — the latest persisted meeting
+- `/meetings/{meetingId}` — completed meeting overview and explicit summary generation
+- `/meetings/{meetingId}/transcript` — persisted final transcript and search
+- `/meetings/{meetingId}/notes` — timestamp-linked research notes
+- `/meetings/{meetingId}/context` — private document upload and processing state
 
-Bookmark and note interactions on the Live screen are local React state only. Transcript, research context, recording, synthesis, and action-item content are explicit S05 demo surfaces with no persistence or generated backend calls.
+All product data comes from Spring through centralized typed REST/WebSocket clients.
+The browser never connects directly to PostgreSQL, MinIO, Azure, or Gemini.

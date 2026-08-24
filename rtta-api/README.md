@@ -1,6 +1,6 @@
 # RTTA API
 
-S05 exposes two independent raw WebSocket channels:
+Spring exposes two independent raw WebSocket channels:
 
 ```text
 Chrome extension -- PCM --> ws://localhost:8080/ws/audio
@@ -11,6 +11,13 @@ The extension owns the audio/translation session. RTTA Web is a subscriber: open
 refreshing, or closing a web tab never stops audio capture or the provider session.
 New `/ws/live` subscribers immediately receive `SESSION_STATE`, so a refreshed page
 can discover the current local meeting without showing a session UUID to the user.
+
+Every audio session creates a persisted meeting. Azure `FINAL` events are stored as
+ordered, idempotent transcript rows before being broadcast; `PARTIAL` events remain
+ephemeral. REST APIs under `/api/meetings` provide history, bookmarks, notes,
+contextual Gemini explanations, explicit summaries, opt-in recordings, and private
+research-document processing. PostgreSQL/pgvector owns structured and vector data;
+MinIO owns WAV recordings and original documents.
 
 Run it with Java 21:
 
@@ -32,9 +39,18 @@ uses `SPEECH_KEY` plus `SPEECH_REGION`; a populated generic `SPEECH_ENDPOINT`
 does not change that mode. Copy `.env.example`, keep `SPEECH_KEY` private, and
 use `RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT=0s` to disable the local
 120-second quota guard in a non-development environment. PhraseList is
-intentionally disabled by default; it remains an opt-in domain-context
-enhancement to be revisited in S06. When enabled, its default low-bias weight
-is `1.1`.
+intentionally disabled by default as a product policy.
+
+Gemini uses the official Google Gen AI Java client behind `ResearchAiProvider`.
+Configure `GEMINI_MODEL`, optional `GEMINI_DEEP_MODEL`, and
+`GEMINI_EMBEDDING_MODEL`; the API key is server-only. Explain sends a bounded
+utterance window plus relevant annotations and retrieved document chunks. Summary
+uses bounded chronological intermediate summaries before final synthesis for long
+meetings. Neither flow generates an Action Items section.
+
+Recording starts only after an explicit web command. PCM already accepted by the
+translation path is streamed to a temporary WAV, finalized, uploaded to private
+MinIO, and removed locally. A five-hour recording is approximately 576 MB.
 
 Native Azure Speech SDK file logging is disabled by default. For a short local
 diagnostic run, set `RTTA_TRANSLATION_AZURE_SDK_LOG_FILE=./azure-speech-sdk-diagnostic.log`.
@@ -48,3 +64,12 @@ matching `chrome-extension://*`. This narrow development allowance supports
 unpacked extension IDs; it is not a production origin or authentication policy.
 For local web development, `/ws/live` accepts localhost and `127.0.0.1` HTTP
 origins on any port.
+
+Run all offline tests, including PostgreSQL/pgvector Testcontainers integration:
+
+```sh
+./mvnw test
+./mvnw package
+```
+
+Tests use fake AI providers and do not consume Azure or Gemini quota.
