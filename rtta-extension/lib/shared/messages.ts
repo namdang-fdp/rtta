@@ -4,6 +4,10 @@ import {
   isBackendState,
   type BackendState,
 } from "../transport/state";
+import {
+  isTranslationSnapshot,
+  type TranslationSnapshot,
+} from "../translation/state";
 
 export const CAPTURE_MESSAGE = {
   START: "rtta:capture/start",
@@ -28,6 +32,7 @@ export interface CaptureState {
   readonly backend: BackendState;
   readonly tabId: number | null;
   readonly metrics: CaptureMetrics | null;
+  readonly translation: TranslationSnapshot | null;
   readonly error: string | null;
   readonly updatedAt: number;
 }
@@ -65,6 +70,7 @@ export function createCaptureState(
   options: {
     readonly tabId?: number | null;
     readonly metrics?: CaptureMetrics | null;
+    readonly translation?: TranslationSnapshot | null;
     readonly error?: string | null;
     readonly backend?: BackendState;
   } = {},
@@ -74,6 +80,7 @@ export function createCaptureState(
     backend: options.backend ?? createBackendState("disconnected"),
     tabId: options.tabId ?? null,
     metrics: options.metrics ?? null,
+    translation: options.translation ?? null,
     error: options.error ?? null,
     updatedAt: Date.now(),
   };
@@ -139,6 +146,7 @@ export function isCaptureState(value: unknown): value is CaptureState {
     isBackendState(value.backend) &&
     (value.tabId === null || typeof value.tabId === "number") &&
     (value.metrics === null || isCaptureMetrics(value.metrics)) &&
+    (value.translation === null || isTranslationSnapshot(value.translation)) &&
     (value.error === null || typeof value.error === "string") &&
     typeof value.updatedAt === "number"
   );

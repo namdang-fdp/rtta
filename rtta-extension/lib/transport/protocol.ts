@@ -8,6 +8,36 @@ export const DEFAULT_BACKEND_WEBSOCKET_URL =
 
 export type BackendAcknowledgement = "STARTED" | "STOPPED" | "ERROR";
 
+export type TranslationEventType = "PARTIAL" | "FINAL";
+
+export interface TranslationWireEvent {
+  readonly type: "TRANSLATION";
+  readonly sessionId: string;
+  readonly eventType: TranslationEventType;
+  readonly sourceText: string;
+  readonly translatedText: string;
+  readonly offsetMs: number;
+  readonly durationMs: number;
+  readonly observedAt: string;
+}
+
+export type BackendTextMessage =
+  | {
+      readonly kind: "acknowledgement";
+      readonly acknowledgement: BackendAcknowledgement;
+    }
+  | {
+      readonly kind: "translation";
+      readonly event: TranslationWireEvent;
+    };
+
+export class BackendProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BackendProtocolError";
+  }
+}
+
 export interface StartControlMessage {
   readonly type: "START";
   readonly sessionId: string;
@@ -57,6 +87,85 @@ export function parseBackendAcknowledgement(
     return acknowledgement;
   }
   return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isCanonicalUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return (
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+  );
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u.test(value) &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
+export function isTranslationWireEvent(
+  value: unknown,
+): value is TranslationWireEvent {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    value.type === "TRANSLATION" &&
+    typeof value.sessionId === "string" &&
+    isCanonicalUuid(value.sessionId) &&
+    (value.eventType === "PARTIAL" || value.eventType === "FINAL") &&
+    typeof value.sourceText === "string" &&
+    typeof value.translatedText === "string" &&
+    (value.sourceText.trim().length > 0 ||
+      value.translatedText.trim().length > 0) &&
+    isNonNegativeSafeInteger(value.offsetMs) &&
+    isNonNegativeSafeInteger(value.durationMs) &&
+    isIsoTimestamp(value.observedAt)
+  );
+}
+
+export function parseBackendTextMessage(value: unknown): BackendTextMessage {
+  const acknowledgement = parseBackendAcknowledgement(value);
+  if (acknowledgement !== null) {
+    return { kind: "acknowledgement", acknowledgement };
+  }
+  if (typeof value !== "string") {
+    throw new BackendProtocolError("Backend messages must be text frames.");
+  }
+
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(value) as unknown;
+  } catch {
+    throw new BackendProtocolError(
+      "Backend text is neither a known acknowledgement nor valid JSON.",
+    );
+  }
+
+  if (!isRecord(decoded) || typeof decoded.type !== "string") {
+    throw new BackendProtocolError("Backend JSON message type is required.");
+  }
+  if (decoded.type !== "TRANSLATION") {
+    throw new BackendProtocolError(
+      `Unsupported backend JSON message type: ${decoded.type}.`,
+    );
+  }
+  if (!isTranslationWireEvent(decoded)) {
+    throw new BackendProtocolError("Malformed TRANSLATION message.");
+  }
+
+  return { kind: "translation", event: decoded };
 }
 
 export function resolveBackendWebSocketUrl(value: string | undefined): string {

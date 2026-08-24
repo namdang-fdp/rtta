@@ -233,6 +233,7 @@ export default defineBackground(() => {
             "stopping",
             captureState.backend.bufferedBytes,
           ),
+          translation: captureState.translation,
         }),
       );
 
@@ -250,6 +251,7 @@ export default defineBackground(() => {
       const message = errorMessage(error, "Unable to stop tab audio capture.");
       captureState = createCaptureState("error", {
         metrics: captureState.metrics,
+        translation: captureState.translation,
         error: message,
         backend: captureState.backend,
       });

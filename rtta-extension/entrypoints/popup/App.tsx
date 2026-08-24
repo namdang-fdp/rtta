@@ -16,6 +16,7 @@ import {
   type CaptureRuntimeMessage,
   type CaptureState,
 } from "../../lib/shared/messages";
+import type { TranslationSnapshot } from "../../lib/translation/state";
 
 function formatElapsed(elapsedMs: number): string {
   const totalSeconds = Math.floor(elapsedMs / 1_000);
@@ -52,6 +53,18 @@ function backendLabel(state: CaptureState | null): string {
     default:
       return "Disconnected";
   }
+}
+
+function approximateDeliveryOverhead(
+  translation: TranslationSnapshot | null,
+): number | null {
+  if (translation === null) {
+    return null;
+  }
+
+  const observedAtMs = Date.parse(translation.observedAt);
+  const overheadMs = Math.round(translation.receivedAtMs - observedAtMs);
+  return Number.isFinite(overheadMs) && overheadMs >= 0 ? overheadMs : null;
 }
 
 function App() {
@@ -133,6 +146,8 @@ function App() {
   const buttonDisabled = captureState === null || commandPending || transitioning;
   const levelPercent = Math.min(100, (metrics?.level ?? 0) * 400);
   const backendConnected = captureState?.backend.phase === "connected";
+  const translation = captureState?.translation ?? null;
+  const deliveryOverheadMs = approximateDeliveryOverhead(translation);
 
   async function sendCommand(
     type: typeof CAPTURE_MESSAGE.START | typeof CAPTURE_MESSAGE.STOP,
@@ -150,6 +165,7 @@ function App() {
       setCaptureState(
         createCaptureState("error", {
           metrics,
+          translation: captureState?.translation,
           error: errorMessage(error, "The capture command failed."),
         }),
       );
@@ -296,6 +312,58 @@ function App() {
                 ? "Stop Capture"
                 : "Start Capture"}
         </button>
+      </section>
+
+      <section className="mt-3 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">Translation</h2>
+          {translation !== null ? (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
+                translation.eventType === "FINAL"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-amber-100 text-amber-700"
+              }`}
+            >
+              {translation.eventType}
+            </span>
+          ) : null}
+        </div>
+
+        {translation === null ? (
+          <p className="mt-3 rounded-xl bg-pink-50 px-3 py-3 text-xs leading-relaxed text-pink-600">
+            {capturing
+              ? "Waiting for Azure translation…"
+              : "Start capture to receive realtime EN / VI."}
+          </p>
+        ) : (
+          <div className="mt-3 space-y-3" aria-live="polite">
+            <div>
+              <p className="text-[10px] font-bold tracking-wider text-pink-500">
+                EN
+              </p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-pink-800">
+                {translation.sourceText || "—"}
+              </p>
+            </div>
+            <div className="rounded-xl bg-pink-100/80 p-3">
+              <p className="text-[10px] font-bold tracking-wider text-pink-600">
+                VI
+              </p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-base font-semibold leading-relaxed text-pink-950">
+                {translation.translatedText || "—"}
+              </p>
+            </div>
+            {deliveryOverheadMs !== null ? (
+              <p
+                className="text-[10px] tabular-nums text-pink-500"
+                title="Approximate same-machine wall-clock time from server observation to extension receipt"
+              >
+                Local delivery ~{deliveryOverheadMs} ms
+              </p>
+            ) : null}
+          </div>
+        )}
       </section>
     </main>
   );

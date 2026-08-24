@@ -9,8 +9,15 @@ import {
   PCM_WORKLET_PROCESSOR_NAME,
 } from "../../lib/audio/pcm";
 import { AudioWebSocketTransport } from "../../lib/transport/audio-websocket";
-import { resolveBackendWebSocketUrl } from "../../lib/transport/protocol";
+import {
+  resolveBackendWebSocketUrl,
+  type TranslationWireEvent,
+} from "../../lib/transport/protocol";
 import { createBackendState } from "../../lib/transport/state";
+import {
+  applyTranslationEvent,
+  type TranslationSnapshot,
+} from "../../lib/translation/state";
 import {
   CAPTURE_MESSAGE,
   createCaptureState,
@@ -47,6 +54,7 @@ interface CaptureSession {
   readonly metrics: CaptureMetricsAccumulator;
   readonly transport: AudioWebSocketTransport;
   readonly trackEndHandlers: ReadonlyMap<MediaStreamTrack, () => void>;
+  translation: TranslationSnapshot | null;
   diagnosticsTimer: number;
   endingIntentionally: boolean;
 }
@@ -77,6 +85,8 @@ function attemptCleanup(action: () => void, errors: unknown[]): void {
 class OffscreenCaptureController {
   private state: CaptureState = createCaptureState("ready");
   private session: CaptureSession | null = null;
+  private startingSessionId: string | null = null;
+  private startingTranslation: TranslationSnapshot | null = null;
 
   getState(): CaptureState {
     if (this.session === null || this.state.phase !== "capturing") {
@@ -87,6 +97,7 @@ class OffscreenCaptureController {
       tabId: this.session.tabId,
       metrics: this.session.metrics.snapshot(performance.now()),
       backend: this.session.transport.getState(),
+      translation: this.session.translation,
     });
   }
 
@@ -107,6 +118,8 @@ class OffscreenCaptureController {
         backend: createBackendState("connecting"),
       }),
     );
+    this.startingSessionId = null;
+    this.startingTranslation = null;
 
     let stream: MediaStream | null = null;
     let audioContext: AudioContext | null = null;
@@ -118,22 +131,37 @@ class OffscreenCaptureController {
 
     try {
       const sessionId = crypto.randomUUID();
+      this.startingSessionId = sessionId;
       const backendUrl = resolveBackendWebSocketUrl(
         import.meta.env.WXT_BACKEND_WS_URL,
       );
-      transport = new AudioWebSocketTransport(backendUrl, (message) => {
-        const activeSession = this.session;
-        if (activeSession !== null && activeSession.transport === transport) {
-          void this.handleUnexpectedEnd(activeSession, message, true);
-        } else {
-          transportFailure = message;
-        }
-      });
+      transport = new AudioWebSocketTransport(
+        backendUrl,
+        (message) => {
+          const activeSession = this.session;
+          if (activeSession !== null && activeSession.transport === transport) {
+            void this.handleUnexpectedEnd(activeSession, message, true);
+          } else {
+            transportFailure = message;
+          }
+        },
+        (event, receivedAtMs) => {
+          if (transport !== null) {
+            this.handleTranslation(
+              sessionId,
+              transport,
+              event,
+              receivedAtMs,
+            );
+          }
+        },
+      );
       await transport.connect(sessionId);
       this.setState(
         createCaptureState("starting", {
           tabId,
           backend: transport.getState(),
+          translation: this.startingTranslation,
         }),
       );
 
@@ -250,10 +278,13 @@ class OffscreenCaptureController {
         metrics,
         transport,
         trackEndHandlers,
+        translation: this.startingTranslation,
         diagnosticsTimer: 0,
         endingIntentionally: false,
       };
       this.session = session;
+      this.startingSessionId = null;
+      this.startingTranslation = null;
 
       workletNode.onprocessorerror = () => {
         void this.handleUnexpectedEnd(
@@ -284,6 +315,7 @@ class OffscreenCaptureController {
           tabId,
           metrics: metrics.snapshot(performance.now()),
           backend: transport.getState(),
+          translation: session.translation,
         }),
       );
 
@@ -301,6 +333,8 @@ class OffscreenCaptureController {
         transport,
       });
       this.session = null;
+      this.startingSessionId = null;
+      this.startingTranslation = null;
 
       const message = errorMessage(
         error,
@@ -320,6 +354,8 @@ class OffscreenCaptureController {
 
   async stop(): Promise<CaptureResponse> {
     if (this.session === null) {
+      this.startingSessionId = null;
+      this.startingTranslation = null;
       this.setState(createCaptureState("ready"));
       return { ok: true, state: this.state };
     }
@@ -333,12 +369,15 @@ class OffscreenCaptureController {
           "stopping",
           session.transport.getState().bufferedBytes,
         ),
+        translation: session.translation,
       }),
     );
 
     try {
       await this.disposeSession(session, true);
       this.session = null;
+      this.startingSessionId = null;
+      this.startingTranslation = null;
       this.setState(createCaptureState("ready"));
       return { ok: true, state: this.state };
     } catch (error) {
@@ -348,6 +387,7 @@ class OffscreenCaptureController {
         createCaptureState("error", {
           error: message,
           backend: createBackendState("error"),
+          translation: session.translation,
         }),
       );
       return { ok: false, state: this.state, error: message };
@@ -366,6 +406,7 @@ class OffscreenCaptureController {
         tabId: session.tabId,
         metrics,
         backend: session.transport.getState(),
+        translation: session.translation,
       }),
     );
   }
@@ -390,14 +431,81 @@ class OffscreenCaptureController {
       );
     }
     this.session = null;
+    this.startingSessionId = null;
+    this.startingTranslation = null;
     this.setState(
       createCaptureState("error", {
         metrics: finalMetrics,
         error: message,
+        translation: session.translation,
         backend: backendFailed
           ? createBackendState("error", finalBufferedBytes)
           : createBackendState("disconnected"),
       }),
+    );
+  }
+
+  private handleTranslation(
+    expectedSessionId: string,
+    transport: AudioWebSocketTransport,
+    event: TranslationWireEvent,
+    receivedAtMs: number,
+  ): void {
+    if (event.sessionId !== expectedSessionId) {
+      console.warn(
+        `[RTTA] Ignored translation for stale session ${event.sessionId}; active session is ${expectedSessionId}.`,
+      );
+      return;
+    }
+
+    const session = this.session;
+    if (
+      session !== null &&
+      session.sessionId === expectedSessionId &&
+      session.transport === transport &&
+      (this.state.phase === "starting" ||
+        this.state.phase === "capturing" ||
+        this.state.phase === "stopping")
+    ) {
+      session.translation = applyTranslationEvent(
+        expectedSessionId,
+        session.translation,
+        event,
+        receivedAtMs,
+      );
+      this.setState(
+        createCaptureState(this.state.phase, {
+          tabId: session.tabId,
+          metrics: session.metrics.snapshot(performance.now()),
+          backend: session.transport.getState(),
+          translation: session.translation,
+        }),
+      );
+      return;
+    }
+
+    if (
+      this.state.phase === "starting" &&
+      this.startingSessionId === expectedSessionId
+    ) {
+      this.startingTranslation = applyTranslationEvent(
+        expectedSessionId,
+        this.startingTranslation,
+        event,
+        receivedAtMs,
+      );
+      this.setState(
+        createCaptureState("starting", {
+          tabId: this.state.tabId,
+          backend: transport.getState(),
+          translation: this.startingTranslation,
+        }),
+      );
+      return;
+    }
+
+    console.warn(
+      `[RTTA] Ignored translation for inactive session ${event.sessionId}.`,
     );
   }
 

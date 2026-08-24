@@ -4,7 +4,8 @@ import { assessBackpressure } from "./backpressure";
 import {
   createStartControlMessage,
   createStopControlMessage,
-  parseBackendAcknowledgement,
+  parseBackendTextMessage,
+  type TranslationWireEvent,
 } from "./protocol";
 import {
   createBackendState,
@@ -30,6 +31,10 @@ interface AudioWebSocketLike {
 
 export type AudioWebSocketFactory = (url: string) => AudioWebSocketLike;
 export type UnexpectedTransportFailureHandler = (message: string) => void;
+export type TranslationEventHandler = (
+  event: TranslationWireEvent,
+  receivedAtMs: number,
+) => void;
 
 export class AudioWebSocketTransport {
   private socket: AudioWebSocketLike | null = null;
@@ -46,6 +51,8 @@ export class AudioWebSocketTransport {
   constructor(
     private readonly url: string,
     private readonly onUnexpectedFailure: UnexpectedTransportFailureHandler,
+    private readonly onTranslationEvent: TranslationEventHandler = () =>
+      undefined,
     private readonly socketFactory: AudioWebSocketFactory = (socketUrl) =>
       new WebSocket(socketUrl),
   ) {}
@@ -210,7 +217,43 @@ export class AudioWebSocketTransport {
         return;
       }
 
-      const acknowledgement = parseBackendAcknowledgement(event.data);
+      let message;
+      try {
+        message = parseBackendTextMessage(event.data);
+      } catch (error) {
+        const detail = errorMessage(error, "Invalid backend message.");
+        if (this.state.phase === "connecting") {
+          this.rejectConnect(`The backend returned an invalid message: ${detail}`);
+        } else {
+          this.reportUnexpectedFailure(
+            `The backend returned an invalid message: ${detail}`,
+          );
+        }
+        return;
+      }
+
+      if (message.kind === "translation") {
+        if (
+          this.state.phase !== "connected" &&
+          this.state.phase !== "stopping"
+        ) {
+          this.rejectConnect(
+            "The backend returned a translation before STARTED.",
+          );
+          return;
+        }
+
+        try {
+          this.onTranslationEvent(message.event, Date.now());
+        } catch (error) {
+          this.reportUnexpectedFailure(
+            errorMessage(error, "Unable to process a backend translation."),
+          );
+        }
+        return;
+      }
+
+      const acknowledgement = message.acknowledgement;
       if (acknowledgement === "STARTED" && this.state.phase === "connecting") {
         this.clearConnectTimer();
         this.state = createBackendState("connected", socket.bufferedAmount);
@@ -234,7 +277,7 @@ export class AudioWebSocketTransport {
 
       if (this.state.phase === "connecting") {
         this.rejectConnect("The backend returned an unexpected acknowledgement.");
-      } else if (this.state.phase === "connected") {
+      } else {
         this.reportUnexpectedFailure(
           "The backend returned an unexpected acknowledgement.",
         );
@@ -301,6 +344,7 @@ export class AudioWebSocketTransport {
       return;
     }
 
+    const wasStopping = this.state.phase === "stopping";
     this.unexpectedFailureReported = true;
     this.clearTimers();
     this.state = createBackendState(
@@ -312,6 +356,9 @@ export class AudioWebSocketTransport {
     const socket = this.socket;
     if (socket !== null && socket.readyState === SOCKET_OPEN) {
       socket.close(1011, "RTTA transport failure");
+    }
+    if (wasStopping) {
+      this.settleStop();
     }
   }
 

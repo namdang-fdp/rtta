@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -20,22 +21,30 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 
 @Component
 final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AudioWebSocketHandler.class);
 	private static final long METRICS_LOG_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(5);
+	private static final int OUTBOUND_SEND_TIME_LIMIT_MS = 10_000;
+	private static final int OUTBOUND_BUFFER_SIZE_LIMIT_BYTES = 256 * 1_024;
 
 	private final AudioControlProtocol controlProtocol;
 	private final TranslationProvider translationProvider;
+	private final TranslationWireProtocol translationWireProtocol;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
+	private final Map<String, SerializedOutboundWebSocket> outboundConnections =
+			new ConcurrentHashMap<>();
 
 	AudioWebSocketHandler(
 			AudioControlProtocol controlProtocol,
-			TranslationProvider translationProvider) {
+			TranslationProvider translationProvider,
+			TranslationWireProtocol translationWireProtocol) {
 		this.controlProtocol = controlProtocol;
 		this.translationProvider = translationProvider;
+		this.translationWireProtocol = translationWireProtocol;
 	}
 
 	int activeSessionCount() {
@@ -48,6 +57,13 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 				.findFirst()
 				.map(session -> session.metrics().snapshot(System.nanoTime()))
 				.orElse(null);
+	}
+
+	@Override
+	public void afterConnectionEstablished(WebSocketSession socket) {
+		outboundConnections.put(
+				socket.getId(),
+				new SerializedOutboundWebSocket(socket));
 	}
 
 	@Override
@@ -109,6 +125,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	@Override
 	public void afterConnectionClosed(WebSocketSession socket, CloseStatus status) {
+		SerializedOutboundWebSocket outbound = outboundConnections.remove(socket.getId());
+		if (outbound != null) {
+			outbound.markFailed();
+		}
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
 			closeTranslation(session, "unexpected-disconnect");
@@ -118,6 +138,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	@Override
 	public void handleTransportError(WebSocketSession socket, Throwable exception) {
+		SerializedOutboundWebSocket outbound = outboundConnections.remove(socket.getId());
+		if (outbound != null) {
+			outbound.markFailed();
+		}
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
 			closeTranslation(session, "transport-error");
@@ -152,7 +176,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		TranslationSession translationSession;
 		try {
 			translationSession = translationProvider.open(
-					event -> logTranslation(command.sessionId(), newSession.startedAt(), event));
+					event -> handleTranslation(socket, newSession, event));
 		}
 		catch (RuntimeException exception) {
 			failConnection(
@@ -173,7 +197,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 				command.bitsPerSample(),
 				command.chunkMs(),
 				AudioControlProtocol.EXPECTED_FRAME_BYTES);
-		sendText(socket, "STARTED");
+		sendText(socket, "STARTED", "STARTED acknowledgement");
 	}
 
 	private void handleStop(WebSocketSession socket, StopCommand command) {
@@ -187,10 +211,14 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			return;
 		}
 
+		if (!session.beginClosing()) {
+			return;
+		}
+
+		closeTranslation(session, "normal-stop");
 		if (activeSessions.remove(socket.getId(), session)) {
-			closeTranslation(session, "normal-stop");
 			logSummary("normal-stop", session.metrics().snapshot(System.nanoTime()));
-			sendText(socket, "STOPPED");
+			sendText(socket, "STOPPED", "STOPPED acknowledgement");
 		}
 	}
 
@@ -201,7 +229,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			logSummary(reason, session.metrics().snapshot(System.nanoTime()));
 		}
 		LOGGER.warn("RTTA AUDIO protocolError connection={} reason={} detail={}", socket.getId(), reason, detail);
-		sendText(socket, "ERROR");
+		sendText(socket, "ERROR", "ERROR acknowledgement");
 		try {
 			socket.close(CloseStatus.POLICY_VIOLATION.withReason(reason));
 		}
@@ -222,18 +250,80 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		}
 	}
 
-	private void sendText(WebSocketSession socket, String payload) {
-		if (!socket.isOpen()) {
+	private void handleTranslation(
+			WebSocketSession socket,
+			AudioConnectionSession session,
+			TranslationEvent event) {
+		logTranslation(session.command().sessionId(), session.startedAt(), event);
+		if (activeSessions.get(socket.getId()) != session) {
 			return;
 		}
+
+		String payload;
 		try {
-			socket.sendMessage(new TextMessage(payload));
+			payload = translationWireProtocol.serialize(session.command().sessionId(), event);
+		}
+		catch (RuntimeException exception) {
+			LOGGER.warn(
+					"RTTA TRANSLATION serializationFailed session={} detail={}",
+					session.command().sessionId(),
+					exception.getMessage());
+			handleOutboundFailure(socket, "translation serialization", exception);
+			return;
+		}
+
+		sendText(socket, payload, event.type() + " translation");
+	}
+
+	private boolean sendText(WebSocketSession socket, String payload, String description) {
+		SerializedOutboundWebSocket outbound = outboundConnections.get(socket.getId());
+		if (outbound == null || !socket.isOpen()) {
+			handleOutboundFailure(
+					socket,
+					description,
+					new IllegalStateException("WebSocket connection is not open"));
+			return false;
+		}
+
+		try {
+			outbound.send(new TextMessage(payload));
+			return true;
 		}
 		catch (IOException | RuntimeException exception) {
-			LOGGER.warn(
-					"RTTA AUDIO acknowledgementFailed connection={} detail={}",
-					socket.getId(),
-					exception.getMessage());
+			handleOutboundFailure(socket, description, exception);
+			return false;
+		}
+	}
+
+	private void handleOutboundFailure(
+			WebSocketSession socket,
+			String description,
+			Throwable exception) {
+		SerializedOutboundWebSocket outbound = outboundConnections.get(socket.getId());
+		if (outbound != null && !outbound.markFailed()) {
+			return;
+		}
+		if (outbound != null) {
+			outboundConnections.remove(socket.getId(), outbound);
+		}
+
+		AudioConnectionSession session = activeSessions.remove(socket.getId());
+		if (session != null) {
+			closeTranslation(session, "outbound-send-failed");
+			logSummary("outbound-send-failed", session.metrics().snapshot(System.nanoTime()));
+		}
+		LOGGER.warn(
+				"RTTA AUDIO outboundFailed connection={} message={} detail={}",
+				socket.getId(),
+				description,
+				exception.getMessage());
+		try {
+			if (socket.isOpen()) {
+				socket.close(CloseStatus.SERVER_ERROR);
+			}
+		}
+		catch (IOException | RuntimeException closeException) {
+			LOGGER.debug("Unable to close failed WebSocket connection {}", socket.getId(), closeException);
 		}
 	}
 
@@ -312,6 +402,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 		private TranslationSession translationSession;
 		private boolean closed;
+		private boolean acceptingAudio;
 
 		private AudioConnectionSession(
 				StartCommand command,
@@ -340,24 +431,63 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 				return false;
 			}
 			translationSession = session;
+			acceptingAudio = true;
+			return true;
+		}
+
+		private synchronized boolean beginClosing() {
+			if (closed || !acceptingAudio) {
+				return false;
+			}
+			acceptingAudio = false;
 			return true;
 		}
 
 		private synchronized void pushAudio(byte[] pcm) {
-			if (closed || translationSession == null) {
+			if (closed || !acceptingAudio || translationSession == null) {
 				throw new IllegalStateException("Translation session is not active");
 			}
 			translationSession.pushAudio(pcm);
 		}
 
-		private synchronized void closeTranslation() {
-			if (closed) {
-				return;
+		private void closeTranslation() {
+			TranslationSession session;
+			synchronized (this) {
+				if (closed) {
+					return;
+				}
+				closed = true;
+				acceptingAudio = false;
+				session = translationSession;
+				translationSession = null;
 			}
-			closed = true;
-			if (translationSession != null) {
-				translationSession.close();
+			if (session != null) {
+				session.close();
 			}
+		}
+	}
+
+	private static final class SerializedOutboundWebSocket {
+
+		private final ConcurrentWebSocketSessionDecorator socket;
+		private final AtomicBoolean failed = new AtomicBoolean();
+
+		private SerializedOutboundWebSocket(WebSocketSession socket) {
+			this.socket = new ConcurrentWebSocketSessionDecorator(
+					socket,
+					OUTBOUND_SEND_TIME_LIMIT_MS,
+					OUTBOUND_BUFFER_SIZE_LIMIT_BYTES);
+		}
+
+		private void send(TextMessage message) throws IOException {
+			if (failed.get()) {
+				throw new IllegalStateException("WebSocket outbound path has failed");
+			}
+			socket.sendMessage(message);
+		}
+
+		private boolean markFailed() {
+			return failed.compareAndSet(false, true);
 		}
 	}
 }

@@ -1,5 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AudioWebSocketTransport } from "./audio-websocket";
+import type { TranslationWireEvent } from "./protocol";
+
+const SESSION_ID = "2b9c9ee0-1511-49d2-a779-d81cf7f7b441";
+
+function translationMessage(
+  eventType: "PARTIAL" | "FINAL" = "PARTIAL",
+): string {
+  return JSON.stringify({
+    type: "TRANSLATION",
+    sessionId: SESSION_ID,
+    eventType,
+    sourceText: "Pulsars",
+    translatedText: "Pulsar",
+    offsetMs: 0,
+    durationMs: 50,
+    observedAt: "2026-08-25T00:00:00.000Z",
+  });
+}
 
 class FakeWebSocket {
   binaryType: BinaryType = "blob";
@@ -51,10 +69,11 @@ describe("AudioWebSocketTransport", () => {
     const transport = new AudioWebSocketTransport(
       "ws://localhost:8080/ws/audio",
       (message) => failures.push(message),
+      () => undefined,
       () => socket,
     );
 
-    const connecting = transport.connect("2b9c9ee0-1511-49d2-a779-d81cf7f7b441");
+    const connecting = transport.connect(SESSION_ID);
     expect(transport.getState().phase).toBe("connecting");
     socket.open();
     expect(JSON.parse(socket.sent[0] as string)).toMatchObject({
@@ -96,10 +115,11 @@ describe("AudioWebSocketTransport", () => {
     const transport = new AudioWebSocketTransport(
       "ws://localhost:8080/ws/audio",
       (message) => failures.push(message),
+      () => undefined,
       () => socket,
     );
 
-    const connecting = transport.connect("2b9c9ee0-1511-49d2-a779-d81cf7f7b441");
+    const connecting = transport.connect(SESSION_ID);
     socket.open();
     socket.message("STARTED");
     await connecting;
@@ -115,10 +135,11 @@ describe("AudioWebSocketTransport", () => {
     const transport = new AudioWebSocketTransport(
       "ws://localhost:8080/ws/audio",
       (message) => failures.push(message),
+      () => undefined,
       () => socket,
     );
 
-    const connecting = transport.connect("2b9c9ee0-1511-49d2-a779-d81cf7f7b441");
+    const connecting = transport.connect(SESSION_ID);
     socket.open();
     socket.message("STARTED");
     await connecting;
@@ -130,5 +151,64 @@ describe("AudioWebSocketTransport", () => {
     expect(socket.sent).toHaveLength(1);
     expect(transport.getState().phase).toBe("error");
     expect(failures).toHaveLength(1);
+  });
+
+  it.each(["PARTIAL", "FINAL"] as const)(
+    "delivers a validated %s event without changing transport state",
+    async (eventType) => {
+      const socket = new FakeWebSocket();
+      const failures: string[] = [];
+      const translations: {
+        event: TranslationWireEvent;
+        receivedAtMs: number;
+      }[] = [];
+      const transport = new AudioWebSocketTransport(
+        "ws://localhost:8080/ws/audio",
+        (message) => failures.push(message),
+        (event, receivedAtMs) => translations.push({ event, receivedAtMs }),
+        () => socket,
+      );
+
+      const connecting = transport.connect(SESSION_ID);
+      socket.open();
+      socket.message("STARTED");
+      await connecting;
+
+      const beforeReceive = Date.now();
+      socket.message(translationMessage(eventType));
+
+      expect(translations).toHaveLength(1);
+      expect(translations[0]?.event.eventType).toBe(eventType);
+      expect(translations[0]?.event.sessionId).toBe(SESSION_ID);
+      expect(translations[0]?.receivedAtMs).toBeGreaterThanOrEqual(beforeReceive);
+      expect(transport.getState().phase).toBe("connected");
+      expect(failures).toEqual([]);
+    },
+  );
+
+  it("fails the active transport on malformed translation JSON", async () => {
+    const socket = new FakeWebSocket();
+    const failures: string[] = [];
+    const transport = new AudioWebSocketTransport(
+      "ws://localhost:8080/ws/audio",
+      (message) => failures.push(message),
+      () => undefined,
+      () => socket,
+    );
+
+    const connecting = transport.connect(SESSION_ID);
+    socket.open();
+    socket.message("STARTED");
+    await connecting;
+    socket.message('{"type":"TRANSLATION","eventType":"PARTIAL"}');
+
+    expect(transport.getState().phase).toBe("error");
+    expect(failures).toEqual([
+      "The backend returned an invalid message: Malformed TRANSLATION message.",
+    ]);
+    expect(socket.closeCalls).toContainEqual({
+      code: 1011,
+      reason: "RTTA transport failure",
+    });
   });
 });

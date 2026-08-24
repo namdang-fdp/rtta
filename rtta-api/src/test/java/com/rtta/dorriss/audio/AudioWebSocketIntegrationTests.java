@@ -8,10 +8,14 @@ import java.net.http.HttpClient;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.rtta.dorriss.translation.TranslationEvent;
+import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
 import com.rtta.dorriss.translation.TranslationSession;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +87,135 @@ class AudioWebSocketIntegrationTests {
 		assertThat(translationProvider.latestSession().closed()).isTrue();
 
 		socket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
+	}
+
+	@Test
+	void deliversPartialAndFinalTranslationJsonOnTheAudioWebSocket() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = connect(listener);
+		UUID sessionId = UUID.randomUUID();
+
+		socket.sendText(startMessage(sessionId), true).join();
+		assertThat(listener.nextText()).isEqualTo("STARTED");
+
+		translationProvider.latestSession().emit(new TranslationEvent(
+				TranslationEventType.PARTIAL,
+				"Pulsars are rapidly rotating...",
+				"Pulsar là những...",
+				1_230,
+				760,
+				Instant.parse("2026-08-25T00:00:00Z")));
+		assertThat(listener.nextText()).isEqualTo(
+				translationJson(
+						sessionId,
+						"PARTIAL",
+						"Pulsars are rapidly rotating...",
+						"Pulsar là những...",
+						1_230,
+						760,
+						"2026-08-25T00:00:00Z"));
+
+		translationProvider.latestSession().emit(new TranslationEvent(
+				TranslationEventType.FINAL,
+				"Pulsars are rapidly rotating neutron stars.",
+				"Pulsar là các sao neutron quay nhanh.",
+				1_230,
+				2_760,
+				Instant.parse("2026-08-25T00:00:02.760Z")));
+		assertThat(listener.nextText()).isEqualTo(
+				translationJson(
+						sessionId,
+						"FINAL",
+						"Pulsars are rapidly rotating neutron stars.",
+						"Pulsar là các sao neutron quay nhanh.",
+						1_230,
+						2_760,
+						"2026-08-25T00:00:02.760Z"));
+
+		socket.sendText("{\"type\":\"STOP\",\"sessionId\":\"" + sessionId + "\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("STOPPED");
+		socket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
+	}
+
+	@Test
+	void serializesTranslationCallbacksFromMultipleProviderThreads() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = connect(listener);
+		UUID sessionId = UUID.randomUUID();
+		int eventCount = 40;
+		CountDownLatch start = new CountDownLatch(1);
+		CountDownLatch completed = new CountDownLatch(eventCount);
+		ExecutorService executor = Executors.newFixedThreadPool(8);
+
+		socket.sendText(startMessage(sessionId), true).join();
+		assertThat(listener.nextText()).isEqualTo("STARTED");
+
+		try {
+			for (int index = 0; index < eventCount; index++) {
+				int eventIndex = index;
+				executor.execute(() -> {
+					try {
+						start.await();
+						translationProvider.latestSession().emit(new TranslationEvent(
+								eventIndex % 2 == 0
+										? TranslationEventType.PARTIAL
+										: TranslationEventType.FINAL,
+								"source " + eventIndex,
+								"translation " + eventIndex,
+								eventIndex * 50L,
+								50,
+								Instant.parse("2026-08-25T00:00:00Z")));
+					}
+					catch (InterruptedException exception) {
+						Thread.currentThread().interrupt();
+					}
+					finally {
+						completed.countDown();
+					}
+				});
+			}
+			start.countDown();
+			assertThat(completed.await(2, TimeUnit.SECONDS)).isTrue();
+			assertThat(listener.nextTexts(eventCount))
+					.hasSize(eventCount)
+					.allSatisfy(message -> assertThat(message)
+							.contains("\"type\":\"TRANSLATION\"")
+							.contains("\"sessionId\":\"" + sessionId + "\""));
+			assertThat(handler.activeSessionCount()).isEqualTo(1);
+			assertThat(translationProvider.latestSession().closed()).isFalse();
+		}
+		finally {
+			executor.shutdownNow();
+		}
+
+		socket.sendText("{\"type\":\"STOP\",\"sessionId\":\"" + sessionId + "\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("STOPPED");
+		socket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
+	}
+
+	@Test
+	void providerEventAfterConnectionClosureIsIgnored() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = connect(listener);
+		UUID sessionId = UUID.randomUUID();
+
+		socket.sendText(startMessage(sessionId), true).join();
+		assertThat(listener.nextText()).isEqualTo("STARTED");
+		FakeTranslationSession translationSession = translationProvider.latestSession();
+		socket.sendClose(WebSocket.NORMAL_CLOSURE, "client closed").join();
+		await().atMost(Duration.ofSeconds(2)).untilAsserted(() ->
+				assertThat(translationSession.closed()).isTrue());
+
+		translationSession.emit(new TranslationEvent(
+				TranslationEventType.PARTIAL,
+				"stale source",
+				"stale translation",
+				0,
+				50,
+				Instant.parse("2026-08-25T00:00:00Z")));
+
+		assertThat(listener.pollText()).isNull();
+		assertThat(handler.activeSessionCount()).isZero();
 	}
 
 	@Test
@@ -178,6 +312,23 @@ class AudioWebSocketIntegrationTests {
 				""".formatted(sessionId);
 	}
 
+	private String translationJson(
+			UUID sessionId,
+			String eventType,
+			String sourceText,
+			String translatedText,
+			long offsetMs,
+			long durationMs,
+			String observedAt) {
+		return "{\"type\":\"TRANSLATION\",\"sessionId\":\"" + sessionId
+				+ "\",\"eventType\":\"" + eventType
+				+ "\",\"sourceText\":\"" + sourceText
+				+ "\",\"translatedText\":\"" + translatedText
+				+ "\",\"offsetMs\":" + offsetMs
+				+ ",\"durationMs\":" + durationMs
+				+ ",\"observedAt\":\"" + observedAt + "\"}";
+	}
+
 	private static final class TestListener implements WebSocket.Listener {
 
 		private final LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
@@ -204,6 +355,21 @@ class AudioWebSocketIntegrationTests {
 		String nextText() throws InterruptedException {
 			return messages.poll(2, TimeUnit.SECONDS);
 		}
+
+		List<String> nextTexts(int count) throws InterruptedException {
+			CopyOnWriteArrayList<String> received = new CopyOnWriteArrayList<>();
+			for (int index = 0; index < count; index++) {
+				String message = nextText();
+				if (message != null) {
+					received.add(message);
+				}
+			}
+			return List.copyOf(received);
+		}
+
+		String pollText() {
+			return messages.poll();
+		}
 	}
 
 	@TestConfiguration(proxyBeanMethods = false)
@@ -228,7 +394,7 @@ class AudioWebSocketIntegrationTests {
 			if (failNextOpen.compareAndSet(true, false)) {
 				throw new IllegalStateException("simulated provider failure");
 			}
-			FakeTranslationSession session = new FakeTranslationSession();
+			FakeTranslationSession session = new FakeTranslationSession(listener);
 			sessions.add(session);
 			return session;
 		}
@@ -258,8 +424,13 @@ class AudioWebSocketIntegrationTests {
 
 	static final class FakeTranslationSession implements TranslationSession {
 
+		private final Consumer<TranslationEvent> listener;
 		private final CopyOnWriteArrayList<byte[]> frames = new CopyOnWriteArrayList<>();
 		private final AtomicBoolean closed = new AtomicBoolean();
+
+		FakeTranslationSession(Consumer<TranslationEvent> listener) {
+			this.listener = listener;
+		}
 
 		@Override
 		public void pushAudio(byte[] pcm) {
@@ -277,6 +448,10 @@ class AudioWebSocketIntegrationTests {
 
 		boolean closed() {
 			return closed.get();
+		}
+
+		void emit(TranslationEvent event) {
+			listener.accept(event);
 		}
 	}
 }
