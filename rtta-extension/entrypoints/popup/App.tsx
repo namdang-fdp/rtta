@@ -1,6 +1,5 @@
 import {
   AudioLines,
-  Languages,
   LoaderCircle,
   Play,
   Square,
@@ -186,9 +185,7 @@ function App() {
   return (
     <main className="w-80 bg-pink-50 p-5 text-pink-950">
       <header className="flex items-center gap-3">
-        <span className="grid size-10 place-items-center rounded-2xl bg-pink-200 text-pink-700">
-          <Languages aria-hidden="true" size={22} strokeWidth={2} />
-        </span>
+        <img src="/icon/128.png" alt="" aria-hidden="true" className="size-10" />
         <div>
           <h1 className="text-xl font-semibold tracking-tight">RTTA</h1>
           <p className="text-xs text-pink-700">Local tab audio streaming</p>

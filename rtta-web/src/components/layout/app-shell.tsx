@@ -6,11 +6,10 @@ import {
   AudioLines,
   BookOpenText,
   FileText,
-  LibraryBig,
   NotebookPen,
-  RadioTower,
 } from "lucide-react"
 
+import { RttaMark } from "@/components/brand/rtta-mark"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
@@ -50,12 +49,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="mb-9 flex min-h-11 items-center justify-center gap-3 xl:justify-start xl:px-2"
             aria-label="RTTA Live workspace"
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/8 text-primary">
-              <RadioTower className="size-5" strokeWidth={1.8} />
-            </span>
+            <RttaMark className="size-10" />
             <span className="hidden min-w-0 xl:block">
               <span className="editorial-title block truncate text-[1.3rem] font-bold leading-tight text-primary">
-                Research Alpha
+                RTTA
               </span>
               <span className="mt-1 block text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 EN → VI Stream
@@ -109,8 +106,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex min-w-0 flex-col overflow-hidden">
           <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm sm:hidden">
             <Link href="/" className="flex items-center gap-2 font-serif text-lg font-bold text-primary">
-              <LibraryBig className="size-5" />
-              RTTA Web
+              <RttaMark className="size-7" />
+              RTTA
             </Link>
             <span className="text-xs font-medium tracking-wide text-muted-foreground">EN → VI</span>
           </header>

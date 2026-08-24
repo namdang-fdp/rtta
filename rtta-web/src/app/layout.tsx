@@ -17,7 +17,8 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "RTTA Web",
+  title: "RTTA",
+  applicationName: "RTTA",
   description: "A calm live research translation workspace for English to Vietnamese meetings.",
 };
 
