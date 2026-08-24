@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: dorriss
+  config:
+    import: optional:file:.env[.properties]
+  main:
+    banner-mode: off
+    web-application-type: none
+
+logging:
+  level:
+    root: WARN
+
+spike:
+  enabled: true
+  speech:
+    key: ${SPEECH_KEY:}
+    endpoint: ${SPEECH_ENDPOINT:https://koreacentral.api.cognitive.microsoft.com/}
+    region: ${SPEECH_REGION:koreacentral}
+    source-language: ${SPEECH_SOURCE_LANGUAGE:en-US}
+    target-language: ${SPEECH_TARGET_LANGUAGE:vi}
+    phrase-list:
+      enabled: ${SPIKE_PHRASE_LIST_ENABLED:false}
+      weight: ${SPIKE_PHRASE_LIST_WEIGHT:1.5}
+      terms: ${SPIKE_PHRASE_LIST_TERMS:eigenstate,eigenstates,eigenvalue,eigenvalues,eigenfunction,Hamiltonian,quantum state,wave function,Schrodinger equation,Schrödinger equation}
+  audio:
+    path: ${SPIKE_AUDIO_PATH:./samples/physics.pcm}
+    seconds-limit: ${SPIKE_AUDIO_SECONDS_LIMIT:20}
+    chunk-ms: ${SPIKE_CHUNK_MS:50}
+  sample:
+    title: "Stationary states: key equations"
+    excerpt-start: "00:14:24.180"
+    excerpt-end: "00:14:38.940"
