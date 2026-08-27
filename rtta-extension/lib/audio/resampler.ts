@@ -103,9 +103,30 @@ export class StreamingResampler {
   }
 
   process(input: Float32Array): Float32Array {
-    const output: number[] = [];
+    const output = new Float32Array(
+      this.maxOutputSamplesForInputFrames(input.length),
+    );
+    const outputLength = this.processInto(input, output);
+    return output.slice(0, outputLength);
+  }
 
-    for (const inputSample of input) {
+  /**
+   * Resample into a caller-owned buffer. AudioWorklet callers reuse this buffer
+   * on every render quantum, avoiding garbage collection on the audio thread.
+   */
+  processInto(
+    input: Float32Array,
+    output: Float32Array,
+    inputLength = input.length,
+  ): number {
+    if (inputLength < 0 || inputLength > input.length) {
+      throw new RangeError("The requested input length is outside the input buffer.");
+    }
+
+    let outputLength = 0;
+
+    for (let inputIndex = 0; inputIndex < inputLength; inputIndex += 1) {
+      const inputSample = input[inputIndex] ?? 0;
       let filteredSample = inputSample;
       for (const lowPassStage of this.lowPassStages) {
         filteredSample = lowPassStage.process(filteredSample);
@@ -118,7 +139,8 @@ export class StreamingResampler {
         this.hasPreviousSample = true;
 
         if (this.producedOutputSamples === 0) {
-          output.push(filteredSample);
+          this.writeSample(output, outputLength, filteredSample);
+          outputLength += 1;
           this.producedOutputSamples += 1;
         }
       } else {
@@ -131,10 +153,13 @@ export class StreamingResampler {
             0,
             Math.min(1, nextOutputPosition - segmentStart),
           );
-          output.push(
+          this.writeSample(
+            output,
+            outputLength,
             this.previousSample +
               (filteredSample - this.previousSample) * interpolationPosition,
           );
+          outputLength += 1;
           this.producedOutputSamples += 1;
           nextOutputPosition =
             this.producedOutputSamples * this.sourceSamplesPerOutputSample;
@@ -146,7 +171,15 @@ export class StreamingResampler {
       this.processedSourceSamples += 1;
     }
 
-    return Float32Array.from(output);
+    return outputLength;
+  }
+
+  maxOutputSamplesForInputFrames(inputFrames: number): number {
+    return Math.max(
+      1,
+      Math.ceil((inputFrames * this.targetSampleRate) / this.sourceSampleRate) +
+        2,
+    );
   }
 
   reset(): void {
@@ -157,5 +190,16 @@ export class StreamingResampler {
     for (const lowPassStage of this.lowPassStages) {
       lowPassStage.reset();
     }
+  }
+
+  private writeSample(
+    output: Float32Array,
+    outputIndex: number,
+    sample: number,
+  ): void {
+    if (outputIndex >= output.length) {
+      throw new RangeError("The resample destination is smaller than required.");
+    }
+    output[outputIndex] = sample;
   }
 }

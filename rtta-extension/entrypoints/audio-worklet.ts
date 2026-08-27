@@ -1,6 +1,6 @@
 import {
   calculateRms,
-  downmixToMono,
+  downmixToMonoInto,
   encodePcmS16Le,
   PCM_SAMPLES_PER_CHUNK,
   PCM_TARGET_SAMPLE_RATE,
@@ -29,6 +29,10 @@ export default defineUnlistedScript(() => {
       PCM_TARGET_SAMPLE_RATE,
     );
     private readonly chunkSamples = new Float32Array(PCM_SAMPLES_PER_CHUNK);
+    private monoSamples = new Float32Array(128);
+    private resampledSamples = new Float32Array(
+      this.resampler.maxOutputSamplesForInputFrames(128),
+    );
     private chunkOffset = 0;
     private sequence = 0;
     private running = true;
@@ -48,8 +52,15 @@ export default defineUnlistedScript(() => {
     }
 
     process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-      for (const outputChannel of outputs[0] ?? []) {
-        outputChannel.fill(0);
+      const outputChannels = outputs[0];
+      if (outputChannels !== undefined) {
+        for (
+          let channelIndex = 0;
+          channelIndex < outputChannels.length;
+          channelIndex += 1
+        ) {
+          outputChannels[channelIndex]?.fill(0);
+        }
       }
 
       if (!this.running) {
@@ -61,11 +72,20 @@ export default defineUnlistedScript(() => {
         return true;
       }
 
-      const monoSamples = downmixToMono(inputChannels);
-      const resampledSamples = this.resampler.process(monoSamples);
+      this.ensureRenderBufferCapacity(inputChannels[0]?.length ?? 0);
+      const monoFrameCount = downmixToMonoInto(
+        inputChannels,
+        this.monoSamples,
+      );
+      const resampledFrameCount = this.resampler.processInto(
+        this.monoSamples,
+        this.resampledSamples,
+        monoFrameCount,
+      );
 
-      for (const sample of resampledSamples) {
-        this.chunkSamples[this.chunkOffset] = sample;
+      for (let sampleIndex = 0; sampleIndex < resampledFrameCount; sampleIndex += 1) {
+        this.chunkSamples[this.chunkOffset] =
+          this.resampledSamples[sampleIndex] ?? 0;
         this.chunkOffset += 1;
 
         if (this.chunkOffset === PCM_SAMPLES_PER_CHUNK) {
@@ -75,6 +95,18 @@ export default defineUnlistedScript(() => {
       }
 
       return true;
+    }
+
+    private ensureRenderBufferCapacity(inputFrameCount: number): void {
+      if (this.monoSamples.length < inputFrameCount) {
+        this.monoSamples = new Float32Array(inputFrameCount);
+      }
+
+      const requiredResampledFrames =
+        this.resampler.maxOutputSamplesForInputFrames(inputFrameCount);
+      if (this.resampledSamples.length < requiredResampledFrames) {
+        this.resampledSamples = new Float32Array(requiredResampledFrames);
+      }
     }
 
     private emitChunk(): void {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateRms,
   downmixToMono,
+  downmixToMonoInto,
   encodePcmS16Le,
   PCM_BYTES_PER_CHUNK,
   PCM_SAMPLES_PER_CHUNK,
@@ -20,6 +21,20 @@ describe("PCM helpers", () => {
     ]);
 
     expect(Array.from(mono)).toEqual([0, 0.5, 0]);
+  });
+
+  it("downmixes into a caller-owned buffer without summing channels", () => {
+    const destination = Float32Array.from([99, 99, 99, 99]);
+    const written = downmixToMonoInto(
+      [
+        Float32Array.from([1, 0.5, -1]),
+        Float32Array.from([-1, 0.5, 1]),
+      ],
+      destination,
+    );
+
+    expect(written).toBe(3);
+    expect(Array.from(destination)).toEqual([0, 0.5, 0, 99]);
   });
 
   it("encodes clamped signed Int16 samples in little-endian order", () => {

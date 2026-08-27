@@ -10,8 +10,42 @@ export const PCM_WORKLET_PROCESSOR_NAME = "rtta-pcm-processor";
 export function downmixToMono(
   channels: readonly Float32Array[],
 ): Float32Array {
+  const mono = new Float32Array(frameCountForChannels(channels));
+  downmixToMonoInto(channels, mono);
+  return mono;
+}
+
+/**
+ * A non-allocating downmix for AudioWorklet render callbacks.
+ *
+ * Each channel contributes equally, so a stereo input is averaged rather than
+ * summed. This is transport-only and must never be used for tab playback.
+ */
+export function downmixToMonoInto(
+  channels: readonly Float32Array[],
+  destination: Float32Array,
+): number {
+  const frameCount = frameCountForChannels(channels);
+  if (destination.length < frameCount) {
+    throw new RangeError("The downmix destination is smaller than the input.");
+  }
+
+  const channelScale = channels.length === 0 ? 0 : 1 / channels.length;
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
+    let mixedSample = 0;
+    for (let channelIndex = 0; channelIndex < channels.length; channelIndex += 1) {
+      mixedSample +=
+        (channels[channelIndex]?.[frameIndex] ?? 0) * channelScale;
+    }
+    destination[frameIndex] = mixedSample;
+  }
+
+  return frameCount;
+}
+
+function frameCountForChannels(channels: readonly Float32Array[]): number {
   if (channels.length === 0) {
-    return new Float32Array(0);
+    return 0;
   }
 
   let frameCount = channels[0]?.length ?? 0;
@@ -19,18 +53,7 @@ export function downmixToMono(
     frameCount = Math.min(frameCount, channels[channelIndex]?.length ?? 0);
   }
 
-  const mono = new Float32Array(frameCount);
-  const channelScale = 1 / channels.length;
-
-  for (const channel of channels) {
-    for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
-      mono[frameIndex] =
-        (mono[frameIndex] ?? 0) +
-        (channel[frameIndex] ?? 0) * channelScale;
-    }
-  }
-
-  return mono;
+  return frameCount;
 }
 
 export function floatSampleToInt16(sample: number): number {

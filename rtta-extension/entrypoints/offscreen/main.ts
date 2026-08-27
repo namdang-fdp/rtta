@@ -45,6 +45,7 @@ interface PcmChunkMessage {
 
 interface CaptureSession {
   readonly sessionId: string;
+  readonly graphGeneration: number;
   readonly tabId: number;
   readonly stream: MediaStream;
   readonly audioContext: AudioContext;
@@ -58,6 +59,8 @@ interface CaptureSession {
   diagnosticsTimer: number;
   endingIntentionally: boolean;
 }
+
+const DEVELOPMENT_AUDIO_DIAGNOSTICS = import.meta.env.DEV;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -87,6 +90,7 @@ class OffscreenCaptureController {
   private session: CaptureSession | null = null;
   private startingSessionId: string | null = null;
   private startingTranslation: TranslationSnapshot | null = null;
+  private nextGraphGeneration = 0;
 
   getState(): CaptureState {
     if (this.session === null || this.state.phase !== "capturing") {
@@ -252,7 +256,9 @@ class OffscreenCaptureController {
       // tabCapture suppresses normal tab playback. This direct branch restores it.
       sourceNode.connect(audioContext.destination);
 
-      // The silent destination branch keeps the worklet in the rendered graph.
+      // The processor is rendered only so it can emit transport PCM. Its output
+      // is zero-filled by the worklet and this gain remains at zero, so this
+      // branch can never mix into the user's native playback branch above.
       sourceNode.connect(workletNode);
       workletNode.connect(silentGainNode);
       silentGainNode.connect(audioContext.destination);
@@ -275,6 +281,7 @@ class OffscreenCaptureController {
 
       const session: CaptureSession = {
         sessionId,
+        graphGeneration: ++this.nextGraphGeneration,
         tabId,
         stream,
         audioContext,
@@ -311,6 +318,8 @@ class OffscreenCaptureController {
         trackEndHandlers.set(track, handleEnded);
         track.addEventListener("ended", handleEnded, { once: true });
       }
+
+      this.logAudioTopology(session, "started");
 
       session.diagnosticsTimer = window.setInterval(() => {
         this.publishDiagnostics(session);
@@ -406,7 +415,10 @@ class OffscreenCaptureController {
     }
 
     const metrics = session.metrics.snapshot(performance.now());
-    console.info(formatCaptureDiagnostics(metrics));
+    if (DEVELOPMENT_AUDIO_DIAGNOSTICS) {
+      console.info(formatCaptureDiagnostics(metrics));
+      this.logAudioTopology(session, "running");
+    }
     this.setState(
       createCaptureState("capturing", {
         tabId: session.tabId,
@@ -522,6 +534,7 @@ class OffscreenCaptureController {
     const cleanupErrors: unknown[] = [];
     session.endingIntentionally = true;
     window.clearInterval(session.diagnosticsTimer);
+    this.logAudioTopology(session, "stopping");
 
     for (const [track, handler] of session.trackEndHandlers) {
       attemptCleanup(
@@ -620,6 +633,64 @@ class OffscreenCaptureController {
         errorMessage(cleanupErrors[0], "Unknown cleanup error."),
       );
     }
+  }
+
+  /** Logs graph metadata only in development builds; never samples or credentials. */
+  private logAudioTopology(
+    session: CaptureSession,
+    lifecycle: "started" | "running" | "stopping",
+  ): void {
+    if (!DEVELOPMENT_AUDIO_DIAGNOSTICS) {
+      return;
+    }
+
+    const audioContext = session.audioContext as AudioContext & {
+      readonly outputLatency?: number;
+    };
+    const tracks = session.stream.getAudioTracks().map((track) => {
+      const settings = track.getSettings();
+      const settingsWithLatency = settings as MediaTrackSettings & {
+        readonly latency?: number;
+      };
+      return {
+        sampleRate: settings.sampleRate ?? null,
+        channelCount: settings.channelCount ?? null,
+        sampleSize: settings.sampleSize ?? null,
+        latency: settingsWithLatency.latency ?? null,
+        echoCancellation: settings.echoCancellation ?? null,
+        autoGainControl: settings.autoGainControl ?? null,
+        noiseSuppression: settings.noiseSuppression ?? null,
+      };
+    });
+
+    console.info("[RTTA] Audio graph", {
+      generation: session.graphGeneration,
+      lifecycle,
+      context: {
+        sampleRate: audioContext.sampleRate,
+        state: audioContext.state,
+        baseLatency: audioContext.baseLatency,
+        outputLatency: audioContext.outputLatency ?? null,
+      },
+      source: {
+        channelCount: session.sourceNode.channelCount,
+        channelCountMode: session.sourceNode.channelCountMode,
+        channelInterpretation: session.sourceNode.channelInterpretation,
+      },
+      tracks,
+      connections: {
+        nativePlayback: ["source -> AudioContext.destination"],
+        processing: [
+          "source -> AudioWorkletNode",
+          "AudioWorkletNode -> silent GainNode",
+          "silent GainNode -> AudioContext.destination",
+        ],
+        audiblePathsToDestination: 1,
+        destinationConnections: 2,
+        silentGain: session.silentGainNode.gain.value,
+        workletOutput: "zero-filled",
+      },
+    });
   }
 
   private setState(state: CaptureState): void {

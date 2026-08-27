@@ -52,6 +52,25 @@ describe("StreamingResampler", () => {
     expect(concatenate(parts)).toEqual(wholeOutput);
   });
 
+  it.each([44_100, 48_000, 96_000])(
+    "writes the same arbitrary-rate output into a caller-owned buffer from %i Hz input",
+    (sourceSampleRate) => {
+      const input = sineWave(sourceSampleRate, 1_000, sourceSampleRate / 10);
+      const allocatingResampler = new StreamingResampler(sourceSampleRate, 16_000);
+      const bufferResampler = new StreamingResampler(sourceSampleRate, 16_000);
+      const output = new Float32Array(
+        bufferResampler.maxOutputSamplesForInputFrames(input.length),
+      );
+
+      const written = bufferResampler.processInto(input, output);
+
+      expect(Array.from(output.slice(0, written))).toEqual(
+        Array.from(allocatingResampler.process(input)),
+      );
+      expect(written).toBe(1_600);
+    },
+  );
+
   it("attenuates frequencies above the target Nyquist limit", () => {
     const lowTone = new StreamingResampler(48_000, 16_000).process(
       sineWave(48_000, 1_000, 48_000),

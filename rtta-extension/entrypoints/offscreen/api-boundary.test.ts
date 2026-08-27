@@ -24,4 +24,15 @@ describe("restricted extension API contexts", () => {
     expect(source).not.toMatch(/\b(?:chrome|browser)\s*\./u);
     expect(source).not.toMatch(storageAccess);
   });
+
+  it("makes the worklet output silent while retaining its PCM-only processor", () => {
+    const source = readFileSync(
+      new URL("../audio-worklet.ts", import.meta.url),
+      "utf8",
+    );
+
+    expect(source).toMatch(/outputChannels\[channelIndex\].*fill\(0\)/u);
+    expect(source).toContain("this.port.postMessage(");
+    expect(source).not.toMatch(/outputChannel\s*\.\s*(?:set|copyWithin)/u);
+  });
 });
