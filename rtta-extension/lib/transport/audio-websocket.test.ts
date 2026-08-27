@@ -3,6 +3,7 @@ import { AudioWebSocketTransport } from "./audio-websocket";
 import type { TranslationWireEvent } from "./protocol";
 
 const SESSION_ID = "2b9c9ee0-1511-49d2-a779-d81cf7f7b441";
+const HOUSEHOLD_CODE = "household-secret";
 
 function translationMessage(
   eventType: "PARTIAL" | "FINAL" = "PARTIAL",
@@ -71,7 +72,7 @@ describe("AudioWebSocketTransport", () => {
       (message) => failures.push(message),
       () => undefined,
       () => socket,
-      "household-secret",
+      HOUSEHOLD_CODE,
     );
 
     const connecting = transport.connect(SESSION_ID);
@@ -81,6 +82,7 @@ describe("AudioWebSocketTransport", () => {
       type: "AUTH",
       householdCode: "household-secret",
     });
+    expect(socket.sent).toHaveLength(1);
     socket.message("AUTHENTICATED");
     expect(JSON.parse(socket.sent[1] as string)).toMatchObject({
       type: "START",
@@ -115,6 +117,52 @@ describe("AudioWebSocketTransport", () => {
     expect(failures).toEqual([]);
   });
 
+  it("does not send START or PCM before AUTHENTICATED", async () => {
+    const socket = new FakeWebSocket();
+    const transport = new AudioWebSocketTransport(
+      "ws://localhost:8080/ws/audio",
+      () => undefined,
+      () => undefined,
+      () => socket,
+      HOUSEHOLD_CODE,
+    );
+
+    const connecting = transport.connect(SESSION_ID);
+    socket.open();
+
+    expect(socket.sent).toHaveLength(1);
+    expect(JSON.parse(socket.sent[0] as string).type).toBe("AUTH");
+    expect(() => transport.sendPcm(new ArrayBuffer(1_600))).toThrow(
+      "not connected",
+    );
+    expect(socket.sent).toHaveLength(1);
+
+    transport.closeImmediately();
+    await expect(connecting).rejects.toThrow("closed");
+  });
+
+  it("rejects STARTED before authentication and never enables PCM", async () => {
+    const socket = new FakeWebSocket();
+    const transport = new AudioWebSocketTransport(
+      "ws://localhost:8080/ws/audio",
+      () => undefined,
+      () => undefined,
+      () => socket,
+      HOUSEHOLD_CODE,
+    );
+
+    const connecting = transport.connect(SESSION_ID);
+    socket.open();
+    socket.message("STARTED");
+
+    await expect(connecting).rejects.toThrow("unexpected acknowledgement");
+    expect(socket.sent).toHaveLength(1);
+    expect(JSON.parse(socket.sent[0] as string).type).toBe("AUTH");
+    expect(() => transport.sendPcm(new ArrayBuffer(1_600))).toThrow(
+      "not connected",
+    );
+  });
+
   it("surfaces an unexpected backend disconnect once", async () => {
     const socket = new FakeWebSocket();
     const failures: string[] = [];
@@ -123,6 +171,7 @@ describe("AudioWebSocketTransport", () => {
       (message) => failures.push(message),
       () => undefined,
       () => socket,
+      HOUSEHOLD_CODE,
     );
 
     const connecting = transport.connect(SESSION_ID);
@@ -157,6 +206,29 @@ describe("AudioWebSocketTransport", () => {
       householdCode: "wrong-household-code",
     });
     expect(transport.getState().phase).toBe("error");
+    expect(
+      (transport as unknown as { householdCode: string | null }).householdCode,
+    ).toBeNull();
+  });
+
+  it("clears volatile authentication context when the socket disconnects", async () => {
+    const socket = new FakeWebSocket();
+    const transport = new AudioWebSocketTransport(
+      "ws://localhost:8080/ws/audio",
+      () => undefined,
+      () => undefined,
+      () => socket,
+      HOUSEHOLD_CODE,
+    );
+
+    const connecting = transport.connect(SESSION_ID);
+    socket.open();
+    socket.finishClose();
+
+    await expect(connecting).rejects.toThrow("closed before streaming started");
+    expect(
+      (transport as unknown as { householdCode: string | null }).householdCode,
+    ).toBeNull();
   });
 
   it("stops instead of adding PCM when the high-water mark is reached", async () => {
@@ -167,6 +239,7 @@ describe("AudioWebSocketTransport", () => {
       (message) => failures.push(message),
       () => undefined,
       () => socket,
+      HOUSEHOLD_CODE,
     );
 
     const connecting = transport.connect(SESSION_ID);
@@ -198,6 +271,7 @@ describe("AudioWebSocketTransport", () => {
         (message) => failures.push(message),
         (event, receivedAtMs) => translations.push({ event, receivedAtMs }),
         () => socket,
+        HOUSEHOLD_CODE,
       );
 
       const connecting = transport.connect(SESSION_ID);
@@ -226,6 +300,7 @@ describe("AudioWebSocketTransport", () => {
       (message) => failures.push(message),
       () => undefined,
       () => socket,
+      HOUSEHOLD_CODE,
     );
 
     const connecting = transport.connect(SESSION_ID);

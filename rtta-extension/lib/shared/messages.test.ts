@@ -1,12 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { createBackendState } from "../transport/state";
 import {
+  CAPTURE_MESSAGE,
   createCaptureState,
+  isCaptureRuntimeMessage,
   isCaptureResponse,
   type CaptureResponse,
 } from "./messages";
 
 describe("capture state translation synchronization", () => {
+  it("accepts household auth context only on a valid offscreen start message", () => {
+    expect(
+      isCaptureRuntimeMessage({
+        type: CAPTURE_MESSAGE.OFFSCREEN_START,
+        streamId: "stream-id",
+        tabId: 42,
+        householdCode: "household-code",
+      }),
+    ).toBe(true);
+    expect(
+      isCaptureRuntimeMessage({
+        type: CAPTURE_MESSAGE.OFFSCREEN_START,
+        streamId: "stream-id",
+        tabId: 42,
+        householdCode: "   ",
+      }),
+    ).toBe(false);
+  });
+
   it("restores the latest translation in a popup state response", () => {
     const state = createCaptureState("capturing", {
       tabId: 42,

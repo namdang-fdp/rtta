@@ -9,8 +9,11 @@ import {
   type CaptureState,
 } from "../lib/shared/messages";
 import { createBackendState } from "../lib/transport/state";
+import { getHouseholdCode } from "../lib/auth/household-code";
 
 const OFFSCREEN_DOCUMENT_PATH = "offscreen.html";
+const MISSING_HOUSEHOLD_CODE_MESSAGE =
+  "Chưa có mã gia đình. Hãy nhập mã để kết nối RTTA.";
 
 function isRestrictedTabUrl(url: string | undefined): boolean {
   if (url === undefined) {
@@ -143,6 +146,20 @@ export default defineBackground(() => {
         return { ok: false, state: currentState, error: message };
       }
 
+      const householdCode = await getHouseholdCode();
+      if (householdCode === null) {
+        const state = createCaptureState("error", {
+          error: MISSING_HOUSEHOLD_CODE_MESSAGE,
+        });
+        captureState = state;
+        void broadcastState(state);
+        return {
+          ok: false,
+          state,
+          error: MISSING_HOUSEHOLD_CODE_MESSAGE,
+        };
+      }
+
       updateState(
         createCaptureState("starting", {
           backend: createBackendState("connecting"),
@@ -183,6 +200,7 @@ export default defineBackground(() => {
         type: CAPTURE_MESSAGE.OFFSCREEN_START,
         streamId,
         tabId,
+        householdCode,
       });
       captureState = response.state;
       void broadcastState(captureState);

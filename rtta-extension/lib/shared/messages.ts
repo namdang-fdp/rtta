@@ -49,6 +49,7 @@ export type CaptureRuntimeMessage =
       readonly type: typeof CAPTURE_MESSAGE.OFFSCREEN_START;
       readonly streamId: string;
       readonly tabId: number;
+      readonly householdCode: string;
     }
   | { readonly type: typeof CAPTURE_MESSAGE.OFFSCREEN_STOP }
   | { readonly type: typeof CAPTURE_MESSAGE.OFFSCREEN_GET_STATE }
@@ -171,7 +172,10 @@ export function isCaptureRuntimeMessage(
       return isCaptureState(value.state);
     case CAPTURE_MESSAGE.OFFSCREEN_START:
       return (
-        typeof value.streamId === "string" && typeof value.tabId === "number"
+        typeof value.streamId === "string" &&
+        typeof value.tabId === "number" &&
+        typeof value.householdCode === "string" &&
+        value.householdCode.trim().length > 0
       );
     default:
       return false;

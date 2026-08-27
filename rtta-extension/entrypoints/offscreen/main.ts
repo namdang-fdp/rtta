@@ -27,7 +27,6 @@ import {
   type CaptureRuntimeMessage,
   type CaptureState,
 } from "../../lib/shared/messages";
-import { getHouseholdCode } from "../../lib/auth/household-code";
 
 interface ChromeTabAudioConstraints extends MediaTrackConstraints {
   readonly mandatory: {
@@ -102,7 +101,11 @@ class OffscreenCaptureController {
     });
   }
 
-  async start(streamId: string, tabId: number): Promise<CaptureResponse> {
+  async start(
+    streamId: string,
+    tabId: number,
+    householdCode: string,
+  ): Promise<CaptureResponse> {
     if (
       this.session !== null ||
       this.state.phase === "starting" ||
@@ -136,10 +139,6 @@ class OffscreenCaptureController {
       const backendUrl = resolveBackendWebSocketUrl(
         import.meta.env.WXT_BACKEND_WS_URL,
       );
-      const householdCode = await getHouseholdCode();
-      if (householdCode === null) {
-        throw new Error("Chưa cấu hình mã gia đình RTTA.");
-      }
       transport = new AudioWebSocketTransport(
         backendUrl,
         (message) => {
@@ -654,7 +653,7 @@ chrome.runtime.onMessage.addListener(
     switch (message.type) {
       case CAPTURE_MESSAGE.OFFSCREEN_START:
         void captureController
-          .start(message.streamId, message.tabId)
+          .start(message.streamId, message.tabId, message.householdCode)
           .then(sendResponse);
         return true;
       case CAPTURE_MESSAGE.OFFSCREEN_STOP:

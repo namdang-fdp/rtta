@@ -49,6 +49,7 @@ export class AudioWebSocketTransport {
   private warningActive = false;
   private unexpectedFailureReported = false;
   private authenticated = false;
+  private householdCode: string | null;
 
   constructor(
     private readonly url: string,
@@ -57,8 +58,12 @@ export class AudioWebSocketTransport {
       undefined,
     private readonly socketFactory: AudioWebSocketFactory = (socketUrl) =>
       new WebSocket(socketUrl),
-    private readonly householdCode = "",
-  ) {}
+    householdCode = "",
+  ) {
+    const normalizedHouseholdCode = householdCode.trim();
+    this.householdCode =
+      normalizedHouseholdCode.length > 0 ? normalizedHouseholdCode : null;
+  }
 
   getState(): BackendState {
     return createBackendState(
@@ -70,6 +75,9 @@ export class AudioWebSocketTransport {
   async connect(sessionId: string): Promise<void> {
     if (this.state.phase !== "disconnected") {
       throw new Error("The backend transport is already active.");
+    }
+    if (this.householdCode === null) {
+      throw new Error("Chưa có mã gia đình. Hãy nhập mã để kết nối RTTA.");
     }
 
     this.sessionId = sessionId;
@@ -185,6 +193,7 @@ export class AudioWebSocketTransport {
     this.socket = null;
     this.sessionId = null;
     this.authenticated = false;
+    this.householdCode = null;
     this.state = createBackendState("disconnected");
     this.settleConnect(new Error("Backend connection was closed."));
     this.settleStop();
@@ -207,7 +216,12 @@ export class AudioWebSocketTransport {
       }
 
       try {
-        socket.send(JSON.stringify(createAuthControlMessage(this.householdCode)));
+        const householdCode = this.householdCode;
+        if (householdCode === null) {
+          this.rejectConnect("Unable to authenticate without a household code.");
+          return;
+        }
+        socket.send(JSON.stringify(createAuthControlMessage(householdCode)));
       } catch (error) {
         this.rejectConnect(
           errorMessage(error, "Unable to authenticate with the RTTA backend."),
@@ -257,8 +271,13 @@ export class AudioWebSocketTransport {
       }
 
       const acknowledgement = message.acknowledgement;
-      if (acknowledgement === "AUTHENTICATED" && this.state.phase === "connecting") {
+      if (
+        acknowledgement === "AUTHENTICATED" &&
+        this.state.phase === "connecting" &&
+        !this.authenticated
+      ) {
         this.authenticated = true;
+        this.householdCode = null;
         try {
           socket.send(JSON.stringify(createStartControlMessage(this.sessionId ?? "")));
         } catch (error) {
@@ -266,7 +285,11 @@ export class AudioWebSocketTransport {
         }
         return;
       }
-      if (acknowledgement === "STARTED" && this.state.phase === "connecting") {
+      if (
+        acknowledgement === "STARTED" &&
+        this.state.phase === "connecting" &&
+        this.authenticated
+      ) {
         this.clearConnectTimer();
         this.state = createBackendState("connected", socket.bufferedAmount);
         this.settleConnect();
@@ -324,6 +347,8 @@ export class AudioWebSocketTransport {
       } else if (this.state.phase === "stopping") {
         this.state = createBackendState("disconnected");
         this.sessionId = null;
+        this.authenticated = false;
+        this.householdCode = null;
         this.settleStop();
       } else if (this.state.phase === "connected") {
         const detail = event.reason.trim();
@@ -343,6 +368,7 @@ export class AudioWebSocketTransport {
 
     this.clearConnectTimer();
     this.authenticated = false;
+    this.householdCode = null;
     this.state = createBackendState("error");
     this.settleConnect(new Error(message));
 
@@ -392,6 +418,8 @@ export class AudioWebSocketTransport {
     this.clearStopTimer();
     this.socket = null;
     this.sessionId = null;
+    this.authenticated = false;
+    this.householdCode = null;
     this.state = createBackendState("disconnected");
 
     if (socket !== null) {

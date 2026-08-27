@@ -3,7 +3,12 @@ const HOUSEHOLD_CODE_KEY = "rttaHouseholdCode";
 export async function getHouseholdCode(): Promise<string | null> {
   const stored = await chrome.storage.local.get(HOUSEHOLD_CODE_KEY);
   const value = stored[HOUSEHOLD_CODE_KEY];
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 export async function saveHouseholdCode(code: string): Promise<void> {
