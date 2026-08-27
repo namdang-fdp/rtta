@@ -22,10 +22,12 @@ export function getApiBaseUrl(): string {
 }
 
 async function rawRequest(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers)
+  headers.set("Accept", "application/json")
   return fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     credentials: "include",
-    headers: { Accept: "application/json", ...init.headers },
+    headers,
   })
 }
 
