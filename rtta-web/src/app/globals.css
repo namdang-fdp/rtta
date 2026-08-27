@@ -36,18 +36,24 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-success: var(--success);
+  --color-surface-canvas: var(--surface-canvas);
   --color-surface-raised: var(--surface-raised);
   --color-surface-soft: var(--surface-soft);
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-xl: calc(var(--radius) * 1.375);
+  --radius-2xl: calc(var(--radius) * 1.75);
+  --radius-3xl: calc(var(--radius) * 2);
+
+  --shadow-surface: 0 1px 2px rgb(72 48 45 / 0.025), 0 10px 28px -20px rgb(72 48 45 / 0.16);
+  --shadow-float: 0 2px 6px rgb(72 48 45 / 0.04), 0 20px 45px -28px rgb(72 48 45 / 0.25);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :root {
-  --background: #fff8f5;
+  --background: #fff9f6;
   --foreground: #211d1a;
   --card: #fffdfb;
   --card-foreground: #211d1a;
@@ -62,13 +68,14 @@
   --accent: #f1e2e1;
   --accent-foreground: #70343e;
   --destructive: #b42318;
-  --border: #dfcecc;
-  --input: #dfcecc;
+  --border: #e5d8d3;
+  --input: #e2d4cf;
   --ring: #a6606b;
   --success: #8fa28d;
+  --surface-canvas: #f8eeea;
   --surface-raised: #fffdfb;
   --surface-soft: #fbf2ed;
-  --radius: 0.5rem;
+  --radius: 1rem;
   --sidebar: #fbf2ed;
   --sidebar-foreground: #524345;
   --sidebar-primary: #914b58;
@@ -99,6 +106,7 @@
   --input: #4b4340;
   --ring: #d89aa3;
   --success: #a8b8a5;
+  --surface-canvas: #211e1d;
   --surface-raised: #2a2726;
   --surface-soft: #24211f;
   --sidebar: #211e1d;
@@ -122,7 +130,7 @@
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-surface-canvas font-sans text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -137,6 +145,30 @@
 }
 
 @layer utilities {
+  .surface-card {
+    @apply rounded-xl border border-border/80 bg-card;
+  }
+
+  .surface-card-soft {
+    @apply rounded-xl border border-border/75 bg-surface-soft;
+  }
+
+  .surface-panel {
+    @apply rounded-2xl border border-border/80 bg-card shadow-surface;
+  }
+
+  .surface-inset {
+    @apply rounded-lg border border-border/70 bg-surface-soft;
+  }
+
+  .surface-quote {
+    @apply rounded-lg border border-border/70 border-l-2 border-l-primary/20 bg-surface-soft;
+  }
+
+  .surface-empty {
+    @apply rounded-xl border border-dashed border-border/80 bg-surface-soft/45;
+  }
+
   .editorial-title {
     @apply font-serif tracking-[-0.025em];
   }
@@ -149,6 +181,36 @@
     scrollbar-color: color-mix(in srgb, var(--border) 75%, transparent) transparent;
     scrollbar-width: thin;
   }
+
+  .markdown-content > * + * {
+    @apply mt-4;
+  }
+
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3,
+  .markdown-content h4 {
+    @apply font-serif font-bold leading-tight text-foreground;
+  }
+
+  .markdown-content h1 { @apply text-2xl; }
+  .markdown-content h2 { @apply text-xl text-primary; }
+  .markdown-content h3 { @apply text-lg; }
+  .markdown-content ul { @apply list-disc space-y-2 pl-6; }
+  .markdown-content ol { @apply list-decimal space-y-2 pl-6; }
+  .markdown-content blockquote { @apply border-l-2 border-primary/35 pl-4 italic text-muted-foreground; }
+  .markdown-content a { @apply font-medium text-primary underline decoration-primary/35 underline-offset-4; }
+  .markdown-content code { @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em]; }
+  .markdown-content pre {
+    @apply overflow-x-auto rounded-lg bg-foreground p-4 text-background;
+    scrollbar-color: color-mix(in srgb, var(--border) 75%, transparent) transparent;
+    scrollbar-width: thin;
+  }
+  .markdown-content pre code { @apply bg-transparent p-0 text-inherit; }
+  .markdown-content hr { @apply my-6; }
+  .markdown-content table { @apply w-full border-collapse text-sm; }
+  .markdown-content th,
+  .markdown-content td { @apply border px-3 py-2 text-left; }
 }
 
 @media (prefers-reduced-motion: reduce) {

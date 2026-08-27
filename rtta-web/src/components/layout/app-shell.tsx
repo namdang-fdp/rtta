@@ -41,9 +41,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const resolvedNavigation = resolveNavigation(pathname)
 
   return (
-    <div className="h-dvh min-h-[620px] overflow-hidden bg-background text-foreground">
+    <div className="h-dvh min-h-[620px] overflow-hidden bg-surface-canvas text-foreground">
       <div className="grid h-full grid-cols-1 sm:grid-cols-[72px_minmax(0,1fr)] xl:grid-cols-[272px_minmax(0,1fr)]">
-        <aside className="hidden h-full flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 sm:flex xl:px-4 xl:py-7">
+        <aside className="hidden h-full flex-col border-r border-sidebar-border/80 bg-sidebar px-3 py-5 sm:flex xl:px-4 xl:py-7">
           <Link
             href="/"
             className="mb-9 flex min-h-11 items-center justify-center gap-3 xl:justify-start xl:px-2"
@@ -72,10 +72,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "group flex h-12 items-center justify-center gap-3 rounded-lg px-3 text-sm font-medium text-sidebar-foreground transition-colors xl:justify-start",
+                        "group flex h-12 items-center justify-center gap-3 rounded-lg border border-transparent px-3 text-sm font-medium text-sidebar-foreground transition-[background-color,border-color,color] duration-200 ease-soft xl:justify-start",
                         active
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/65 hover:text-foreground",
+                          ? "border-sidebar-border/60 bg-sidebar-accent/85 text-sidebar-accent-foreground"
+                          : "hover:bg-sidebar-accent/60 hover:text-foreground",
                       )}
                     >
                       <Icon className="size-[1.15rem] shrink-0" strokeWidth={active ? 2.2 : 1.8} />
