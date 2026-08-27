@@ -37,8 +37,9 @@ Azure credentials and settings are loaded from the optional root `.env` file or
 the process environment. The production adapter follows the proven spike and
 uses `SPEECH_KEY` plus `SPEECH_REGION`; a populated generic `SPEECH_ENDPOINT`
 does not change that mode. Copy `.env.example`, keep `SPEECH_KEY` private, and
-use `RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT=0s` to disable the local
-120-second quota guard in a non-development environment. PhraseList is
+use `RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT=120s` only when the local
+quota guard is desired. It defaults to `0s` (disabled) in production and is
+not an Azure service limit. PhraseList is
 intentionally disabled by default as a product policy.
 
 Gemini uses the official Google Gen AI Java client behind `ResearchAiProvider`.
@@ -50,7 +51,9 @@ meetings. Neither flow generates an Action Items section.
 
 Recording starts only after an explicit web command. PCM already accepted by the
 translation path is streamed to a temporary WAV, finalized, uploaded to private
-MinIO, and removed locally. A five-hour recording is approximately 576 MB.
+MinIO, and removed locally. Playback streams through authenticated Spring with
+single-range HTTP seeking; private storage URLs never reach the browser. A
+five-hour recording is approximately 576 MB and is never buffered fully in JVM memory.
 
 Native Azure Speech SDK file logging is disabled by default. For a short local
 diagnostic run, set `RTTA_TRANSLATION_AZURE_SDK_LOG_FILE=./azure-speech-sdk-diagnostic.log`.
@@ -59,11 +62,11 @@ The generated diagnostic log is ignored by Git.
 The older spike runner remains disabled by default, so normal startup never
 streams benchmark audio.
 
-For local extension development, `/ws/audio` intentionally accepts origins
-matching `chrome-extension://*`. This narrow development allowance supports
-unpacked extension IDs; it is not a production origin or authentication policy.
-For local web development, `/ws/live` accepts localhost and `127.0.0.1` HTTP
-origins on any port.
+`RTTA_WEB_ALLOWED_ORIGINS` and `RTTA_EXTENSION_ALLOWED_ORIGINS` are exact,
+comma-separated allowlists. Configure explicit localhost and installed unpacked
+extension Origins for development; no wildcard is shipped. `/ws/audio` also
+requires the separate `RTTA_EXTENSION_DEVICE_TOKEN` AUTH frame before START or PCM.
+Browser REST and `/ws/live` require the household Spring session.
 
 Run all offline tests, including PostgreSQL/pgvector Testcontainers integration:
 

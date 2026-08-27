@@ -48,15 +48,15 @@ export function LiveTranslationSurface({
         ref={containerRef}
         className="quiet-scrollbar h-full overflow-y-auto px-4 py-7 sm:px-6 md:px-8 md:py-10 xl:px-10 xl:py-12"
         role="region"
-        aria-label="Live English to Vietnamese translation"
+        aria-label="Bản dịch trực tiếp từ tiếng Anh sang tiếng Việt"
         tabIndex={0}
         data-testid="live-scroll-container"
       >
         <div className="mx-auto max-w-3xl pb-32">
           {recentFinals.length === 0 && !currentPartial ? (
-            <div className="mb-10 rounded-lg border border-dashed border-border bg-surface-soft/55 px-5 py-6 text-center">
+            <div className="surface-empty mb-10 px-5 py-6 text-center">
               <p lang="vi" className="text-lg font-medium">Đang lắng nghe tiếng Anh…</p>
-              <p lang="en" className="mt-1 text-sm text-muted-foreground">Listening for English speech…</p>
+              <p className="mt-1 text-sm text-muted-foreground">Nội dung tiếng Anh sẽ xuất hiện khi người nói bắt đầu.</p>
             </div>
           ) : null}
 
@@ -76,10 +76,10 @@ export function LiveTranslationSurface({
             ))}
           </div>
 
-          <div className="relative mt-10 border-t border-border/70 pt-8" data-testid="partial-utterance">
-            <div className="absolute -top-3 left-0 flex items-center gap-2 bg-background pr-3 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-primary">
+          <div className="surface-inset relative mt-10 px-5 pb-5 pt-7 md:px-6" data-testid="partial-utterance">
+            <div className="absolute -top-3 left-4 flex items-center gap-2 rounded-full border border-border/70 bg-background px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-primary">
               <CircleDot className="size-3.5" />
-              Listening
+              Đang nghe
             </div>
             <div className={cn("transition-opacity duration-200", currentPartial ? "opacity-70" : "opacity-45")}>
               <p
@@ -89,13 +89,19 @@ export function LiveTranslationSurface({
               >
                 {currentPartial?.translatedText || "Đang chờ lời nói tiếp theo…"}
               </p>
-              <p
-                lang="en"
-                data-language-priority="secondary"
-                className="reading-column mt-2 border-l-2 border-primary/15 pl-4 text-[clamp(0.92rem,1.2vw,1.02rem)] italic leading-relaxed text-muted-foreground"
-              >
-                {currentPartial?.sourceText || "Waiting for the next utterance…"}
-              </p>
+              {currentPartial ? (
+                <p
+                  lang="en"
+                  data-language-priority="secondary"
+                  className="reading-column mt-2 border-l-2 border-primary/15 pl-4 text-[clamp(0.92rem,1.2vw,1.02rem)] italic leading-relaxed text-muted-foreground"
+                >
+                  {currentPartial.sourceText}
+                </p>
+              ) : (
+                <p className="mt-2 border-l-2 border-primary/15 pl-4 text-sm italic text-muted-foreground">
+                  Nội dung tiếng Anh sẽ xuất hiện tại đây.
+                </p>
+              )}
             </div>
           </div>
           <div ref={endRef} className="h-px" aria-hidden="true" />
@@ -106,11 +112,11 @@ export function LiveTranslationSurface({
         <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-4">
           <Button
             onClick={jumpToLive}
-            className="pointer-events-auto h-11 rounded-full bg-foreground px-5 text-background shadow-lg hover:bg-foreground/88"
-            aria-label="Jump to newest translation and resume auto-follow"
+            className="pointer-events-auto h-11 rounded-full bg-foreground px-5 text-background shadow-float hover:bg-foreground/88"
+            aria-label="Đến bản dịch mới nhất và tiếp tục tự động theo dõi"
           >
             <ArrowDown className="size-4" />
-            Jump to live
+            Đến trực tiếp
           </Button>
         </div>
       ) : null}
@@ -145,8 +151,8 @@ function FinalUtterance({
         <Clock3 className="size-3.5" />
         <span>{formatOffset(utterance.offsetMs)}</span>
         <span aria-hidden="true">·</span>
-        <span>Meeting audio</span>
-        {noted ? <span className="ml-auto text-primary">Research note</span> : null}
+        <span>Âm thanh cuộc họp</span>
+        {noted ? <span className="ml-auto text-primary">Có ghi chú</span> : null}
       </div>
       <p
         lang="vi"
@@ -169,7 +175,7 @@ function FinalUtterance({
           size="icon-sm"
           onClick={onBookmark}
           disabled={!utterance.utteranceId || bookmarkPending}
-          aria-label={bookmarked ? "Remove bookmark" : "Bookmark utterance"}
+          aria-label={bookmarked ? "Bỏ lưu đoạn này" : "Lưu đoạn này"}
           aria-pressed={bookmarked}
           className={bookmarked ? "bg-accent text-primary" : "text-muted-foreground"}
         >
@@ -180,7 +186,7 @@ function FinalUtterance({
           size="icon-sm"
           onClick={onNote}
           disabled={!utterance.utteranceId || notePending}
-          aria-label={noted ? "Edit research note" : "Add research note"}
+          aria-label={noted ? "Sửa ghi chú" : "Thêm ghi chú"}
           className={noted ? "bg-accent text-primary" : "text-muted-foreground"}
         >
           <NotebookPen />
@@ -190,7 +196,7 @@ function FinalUtterance({
           size="icon-sm"
           onClick={onExplain}
           disabled={!utterance.utteranceId}
-          aria-label="Explain a concept from this utterance"
+          aria-label="Hỏi AI về đoạn này"
           className="text-muted-foreground"
         >
           <Brain />

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -97,7 +98,7 @@ public class ExplainConceptService {
 		}
 
 		Instant createdAt = clock.instant();
-		UUID explanationId = persistSafely(
+		UUID explanationId = persist(
 				meetingId,
 				request.utteranceId(),
 				selectedText,
@@ -125,7 +126,56 @@ public class ExplainConceptService {
 				createdAt);
 	}
 
-	private UUID persistSafely(
+	@Transactional(readOnly = true)
+	public List<AiExplanationResponse> listForUtterance(UUID meetingId, UUID utteranceId) {
+		return explanationRepository
+				.findAllByMeetingIdAndUtteranceIdOrderByCreatedAtAscIdAsc(meetingId, utteranceId)
+				.stream()
+				.map(this::toResponse)
+				.toList();
+	}
+
+	private AiExplanationResponse toResponse(AiExplanation explanation) {
+		Map<String, Object> snapshot = explanation.getContextSnapshot();
+		ExplanationDepth requestedDepth = readDepth(snapshot.get("requestedDepth"));
+		ExplanationDepth effectiveDepth = readDepth(snapshot.get("effectiveDepth"));
+		boolean deepFallback = Boolean.TRUE.equals(snapshot.get("deepModelFallback"));
+		return new AiExplanationResponse(
+				explanation.getId(),
+				explanation.getMeetingId(),
+				explanation.getUtteranceId(),
+				explanation.getSelectedText(),
+				explanation.getUserQuestion(),
+				requestedDepth,
+				effectiveDepth,
+				deepFallback,
+				explanation.getModel(),
+				explanation.getResponseMarkdown(),
+				explanation.getCitations() == null ? List.of() : explanation.getCitations(),
+				new AiExplanationResponse.ContextWindow(
+						listSize(snapshot.get("previousUtterances")),
+						listSize(snapshot.get("followingUtterances")),
+						listSize(snapshot.get("documents"))),
+				explanation.getCreatedAt());
+	}
+
+	private ExplanationDepth readDepth(Object value) {
+		if (value instanceof String name) {
+			try {
+				return ExplanationDepth.valueOf(name);
+			}
+			catch (IllegalArgumentException ignored) {
+				// Persisted rows from older prompt versions use the normal explanation depth.
+			}
+		}
+		return ExplanationDepth.QUICK;
+	}
+
+	private int listSize(Object value) {
+		return value instanceof List<?> list ? list.size() : 0;
+	}
+
+	private UUID persist(
 			UUID meetingId,
 			UUID utteranceId,
 			String selectedText,
@@ -150,7 +200,7 @@ public class ExplainConceptService {
 		catch (RuntimeException exception) {
 			LOGGER.error("RTTA AI explanationPersistenceFailed meeting={} cause={}",
 					meetingId, exception.getClass().getSimpleName());
-			return null;
+			throw new AiServiceUnavailableException();
 		}
 	}
 

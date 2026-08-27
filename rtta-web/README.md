@@ -14,6 +14,12 @@ bun run dev
 
 Open <http://localhost:3000>. The default socket URL is `ws://localhost:8080/ws/live`; override it with `NEXT_PUBLIC_RTTA_LIVE_WS_URL` when needed.
 
+The production standalone server injects `RTTA_PUBLIC_API_URL` and
+`RTTA_PUBLIC_LIVE_WS_URL` into each request at container runtime, so deployment
+domains do not require an image rebuild. Runtime values win over the optional
+`NEXT_PUBLIC_*` compatibility fallbacks. All browser REST calls include the
+host-only API session cookie and mutating calls send Spring's CSRF token.
+
 No Azure, Gemini, database, or MinIO credential belongs in this application. Only the public backend HTTP and live WebSocket URLs are exposed to the browser.
 
 ## Quality checks

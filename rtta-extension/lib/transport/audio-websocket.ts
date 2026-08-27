@@ -2,6 +2,7 @@ import { PCM_BYTES_PER_CHUNK } from "../audio/pcm";
 import { errorMessage } from "../shared/messages";
 import { assessBackpressure } from "./backpressure";
 import {
+  createAuthControlMessage,
   createStartControlMessage,
   createStopControlMessage,
   parseBackendTextMessage,
@@ -55,6 +56,7 @@ export class AudioWebSocketTransport {
       undefined,
     private readonly socketFactory: AudioWebSocketFactory = (socketUrl) =>
       new WebSocket(socketUrl),
+    private readonly deviceToken = "",
   ) {}
 
   getState(): BackendState {
@@ -202,9 +204,7 @@ export class AudioWebSocketTransport {
       }
 
       try {
-        socket.send(
-          JSON.stringify(createStartControlMessage(this.sessionId ?? "")),
-        );
+        socket.send(JSON.stringify(createAuthControlMessage(this.deviceToken)));
       } catch (error) {
         this.rejectConnect(
           errorMessage(error, "Unable to send START to the backend."),
@@ -254,6 +254,14 @@ export class AudioWebSocketTransport {
       }
 
       const acknowledgement = message.acknowledgement;
+      if (acknowledgement === "AUTHENTICATED" && this.state.phase === "connecting") {
+        try {
+          socket.send(JSON.stringify(createStartControlMessage(this.sessionId ?? "")));
+        } catch (error) {
+          this.rejectConnect(errorMessage(error, "Unable to send START to the backend."));
+        }
+        return;
+      }
       if (acknowledgement === "STARTED" && this.state.phase === "connecting") {
         this.clearConnectTimer();
         this.state = createBackendState("connected", socket.bufferedAmount);

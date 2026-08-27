@@ -68,12 +68,12 @@ describe("NotesPage", () => {
     const general = { ...linkedNote, id: "note-general", utteranceId: null, offsetMs: null }
     vi.mocked(createNote).mockResolvedValue(general)
     render(<NotesPage meetingId={meeting.id} />)
-    await screen.findByRole("heading", { name: "No notes for this meeting" })
+    await screen.findByRole("heading", { name: "Chưa có ghi chú cho cuộc họp này" })
 
-    fireEvent.change(screen.getByRole("textbox", { name: "New meeting-level note" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: "Ghi chú chung mới" }), {
       target: { value: general.content },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }))
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ghi chú" }))
 
     await waitFor(() => expect(createNote).toHaveBeenCalledWith(meeting.id, { content: general.content }))
     expect(await screen.findByText(general.content)).toBeInTheDocument()
@@ -84,9 +84,9 @@ describe("NotesPage", () => {
     render(<NotesPage meetingId={meeting.id} />)
     await screen.findByText(linkedNote.content)
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }))
+    fireEvent.click(screen.getByRole("button", { name: "Xóa" }))
     expect(deleteNote).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }))
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận xóa" }))
 
     await waitFor(() => expect(deleteNote).toHaveBeenCalledWith(meeting.id, linkedNote.id))
     expect(screen.queryByText(linkedNote.content)).not.toBeInTheDocument()

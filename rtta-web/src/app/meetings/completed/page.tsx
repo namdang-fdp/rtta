@@ -1,12 +1,5 @@
-import type { Metadata } from "next"
-
-import { CompletedMeetingOverview } from "@/components/meeting/completed-meeting-overview"
-
-export const metadata: Metadata = {
-  title: "Completed Meeting · RTTA Web",
-  description: "Latest persisted RTTA research meeting.",
-}
+import { redirect } from "next/navigation"
 
 export default function CompletedMeetingRoute() {
-  return <CompletedMeetingOverview />
+  redirect("/meetings")
 }

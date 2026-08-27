@@ -135,7 +135,7 @@ function applyServerEvent(state: LiveMeetingState, event: LiveServerEvent): Live
       if (event.sessionId && state.activeSessionId && event.sessionId !== state.activeSessionId) {
         return state
       }
-      return { ...state, lastError: event.message }
+      return { ...state, lastError: "Không thể tiếp tục dịch trực tiếp. Vui lòng thử lại." }
   }
 }
 

@@ -43,7 +43,7 @@ export function useTranscriptHistory(requestedMeetingId: string | undefined, que
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return
         setUtterances([])
-        setError(caught instanceof Error ? caught.message : "Transcript history is unavailable.")
+        setError("Không thể tải bản ghi cuộc họp. Vui lòng thử lại.")
       } finally {
         if (!controller.signal.aborted) setLoadingTranscript(false)
       }
@@ -66,8 +66,8 @@ export function useTranscriptHistory(requestedMeetingId: string | undefined, que
       setUtterances((current) => [...current, ...result.items])
       setPage(result.page)
       setTotalPages(result.totalPages)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "More transcript history is unavailable.")
+    } catch {
+      setError("Không thể tải thêm bản ghi. Vui lòng thử lại.")
     } finally {
       setLoadingMore(false)
     }

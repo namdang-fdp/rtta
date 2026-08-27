@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.idea
+target
+*.log
+samples
+README.md
+BENCHMARK_RESULTS*.md

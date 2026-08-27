@@ -4,4 +4,6 @@ export interface MeetingMoment {
   sourceText: string
   translatedText: string
   offsetMs: number
+  bookmarked?: boolean
+  noteContent?: string | null
 }

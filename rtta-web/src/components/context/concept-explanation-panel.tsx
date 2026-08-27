@@ -1,11 +1,10 @@
 "use client"
 
-import { AlertCircle, BookOpen, Clock3, FileText, LoaderCircle, Search, Sparkles, X } from "lucide-react"
+import Link from "next/link"
+import { AlertCircle, Bookmark, BookOpen, Clock3, FileText, LoaderCircle, NotebookPen, Sparkles, X } from "lucide-react"
 
 import { MarkdownContent } from "@/components/ai/markdown-content"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { ConceptExplanationController } from "@/hooks/use-concept-explanation"
 import { formatOffset } from "@/lib/format"
@@ -27,16 +26,16 @@ export function ConceptExplanationPanel({
   const target = controller.target
 
   return (
-    <div className={cn("flex h-full min-h-0 flex-col bg-surface-soft", className)}>
-      <header className="flex shrink-0 items-center justify-between border-b px-5 py-4">
+    <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
+      <header className={cn("flex shrink-0 items-center justify-between border-b bg-surface-soft/65 px-5", compactHeader ? "py-3" : "py-4")}>
         <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
           <BookOpen className="size-4 shrink-0" />
           <span className="truncate text-xs font-semibold uppercase tracking-[0.12em]">
-            Explain concept
+            Giải thích đoạn này
           </span>
         </div>
         {onClose ? (
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close concept explanation">
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Đóng phần giải thích">
             <X />
           </Button>
         ) : null}
@@ -45,70 +44,68 @@ export function ConceptExplanationPanel({
       <div className="quiet-scrollbar min-h-0 flex-1 overflow-y-auto p-5 md:p-6">
         {target ? (
           <div className="space-y-5">
-            <section className="rounded-xl border bg-card p-4">
+            <section className="surface-card p-4">
               <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <Clock3 className="size-3.5" />
                 {formatOffset(target.offsetMs)}
                 <span aria-hidden="true">·</span>
-                persisted transcript
+                đoạn đã lưu
               </div>
               <p lang="vi" className="line-clamp-3 font-medium leading-relaxed">{target.translatedText}</p>
               <p lang="en" className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{target.sourceText}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1", target.bookmarked ? "bg-accent text-primary" : "bg-muted")}>
+                  <Bookmark className="size-3" />{target.bookmarked ? "Đã lưu" : "Chưa lưu"}
+                </span>
+                <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1", target.noteContent ? "bg-accent text-primary" : "bg-muted")}>
+                  <NotebookPen className="size-3" />{target.noteContent ? "Có ghi chú" : "Chưa có ghi chú"}
+                </span>
+              </div>
             </section>
 
-            <section className="space-y-4 rounded-xl border bg-card p-5">
-              <div>
-                <label htmlFor="explain-selection" className="text-sm font-medium">Concept or selected phrase</label>
-                <Input
-                  id="explain-selection"
-                  value={controller.selectedText}
-                  onChange={(event) => controller.setSelectedText(event.target.value.slice(0, 500))}
-                  placeholder="e.g. Hamiltonian"
-                  className="mt-2"
-                  disabled={controller.loading}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label htmlFor="explain-question" className="text-sm font-medium">
-                  Specific question <span className="font-normal text-muted-foreground">(optional)</span>
-                </label>
-                <Textarea
-                  id="explain-question"
-                  value={controller.userQuestion}
-                  onChange={(event) => controller.setUserQuestion(event.target.value.slice(0, 2_000))}
-                  placeholder="Why is the speaker using this concept here?"
-                  className="mt-2 min-h-24 resize-none"
-                  disabled={controller.loading}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => void controller.generate("QUICK")}
-                  disabled={controller.loading || !controller.selectedText.trim()}
-                >
-                  {controller.loading ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
-                  Explain
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => void controller.generate("DEEP")}
-                  disabled={controller.loading || !controller.selectedText.trim()}
-                >
-                  <Search />
-                  Research deeper
-                </Button>
-              </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Opening this drawer never calls Gemini. Generation happens only when you choose an option.
-              </p>
-            </section>
+            {controller.historyLoading ? (
+              <section className="surface-card px-5 py-10 text-center" role="status">
+                <LoaderCircle className="mx-auto mb-3 size-5 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Đang tải các giải thích đã lưu…</p>
+              </section>
+            ) : null}
+
+            {controller.history.map((item) => (
+              <article key={item.id ?? item.createdAt} className="space-y-3">
+                <div className="ml-4 rounded-xl border border-border/65 bg-secondary/65 px-4 py-3">
+                  <p className="mb-1 text-xs font-semibold text-muted-foreground">Bạn</p>
+                  <p className="text-sm leading-relaxed">{item.userQuestion || "Giải thích đoạn này"}</p>
+                </div>
+                <div className="mr-1 overflow-hidden surface-card">
+                  <div className="flex items-center gap-2 border-b bg-accent/35 px-5 py-3 text-xs font-semibold text-primary">
+                    <Sparkles className="size-3.5" /> RTTA
+                  </div>
+                  <MarkdownContent markdown={item.responseMarkdown} />
+                  {item.citations.length ? (
+                    <section className="border-t px-5 py-4">
+                      <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                        <FileText className="size-3.5" /> Đang tham khảo
+                      </h3>
+                      <ul className="space-y-2 text-sm">
+                        {item.citations.map((citation, index) => (
+                          <li key={`${String(citation.documentId)}:${index}`} className="surface-inset px-3 py-2">
+                            <span className="font-medium">{String(citation.fileName ?? "Tài liệu nghiên cứu")}</span>
+                            {citation.pageNumber ? <span className="text-muted-foreground"> · trang {String(citation.pageNumber)}</span> : null}
+                            {citation.slideNumber ? <span className="text-muted-foreground"> · slide {String(citation.slideNumber)}</span> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
+                </div>
+              </article>
+            ))}
 
             {controller.loading ? (
-              <section className="rounded-xl border bg-card px-5 py-12 text-center" role="status">
+              <section className="surface-card px-5 py-12 text-center" role="status">
                 <LoaderCircle className="mx-auto mb-3 size-6 animate-spin text-primary" />
-                <p className="font-medium">Building a contextual Vietnamese explanation…</p>
-                <p className="mt-1 text-sm text-muted-foreground">Using only the nearby transcript and relevant research context.</p>
+                <p className="font-medium">RTTA đang đọc ngữ cảnh quanh đoạn này…</p>
+                <p className="mt-1 text-sm text-muted-foreground">Câu trả lời sẽ bằng tiếng Việt và bám sát nội dung cuộc họp.</p>
               </section>
             ) : null}
 
@@ -124,63 +121,41 @@ export function ConceptExplanationPanel({
                   onClick={() => void controller.generate("QUICK")}
                   disabled={!controller.selectedText.trim()}
                 >
-                  Retry explanation
+                  Thử lại
                 </Button>
               </section>
             ) : null}
 
-            {controller.response ? (
-              <article className="overflow-hidden rounded-xl border bg-card">
-                <div className="border-b bg-accent/45 p-5">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="border-primary/25 bg-background/70 text-primary">
-                      {controller.response.requestedDepth === "DEEP" ? "Research deeper" : "Quick explanation"}
-                    </Badge>
-                    <Badge variant="secondary">{controller.response.model}</Badge>
-                  </div>
-                  <h2 className={cn(
-                    "editorial-title font-bold text-primary",
-                    compactHeader ? "text-2xl" : "text-[1.75rem]",
-                  )}>
-                    {controller.response.selectedText}
-                  </h2>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Context: {controller.response.contextWindow.previousUtterances} before ·{" "}
-                    {controller.response.contextWindow.followingUtterances} after ·{" "}
-                    {controller.response.contextWindow.documentChunks} document chunks
-                  </p>
-                  {controller.response.deepModelFallback ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      No distinct deep model is configured, so RTTA used the normal model.
-                    </p>
-                  ) : null}
-                </div>
-
-                <MarkdownContent markdown={controller.response.responseMarkdown} />
-
-                {controller.response.citations.length ? (
-                  <section className="border-t p-5">
-                    <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      <FileText className="size-3.5" />
-                      Research sources
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      {controller.response.citations.map((citation, index) => (
-                        <li key={`${String(citation.documentId)}:${index}`} className="rounded-lg bg-muted px-3 py-2">
-                          <span className="font-medium">{String(citation.fileName ?? "Research document")}</span>
-                          {citation.pageNumber ? <span className="text-muted-foreground"> · page {String(citation.pageNumber)}</span> : null}
-                          {citation.slideNumber ? <span className="text-muted-foreground"> · slide {String(citation.slideNumber)}</span> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
-              </article>
+            {!controller.historyLoading && !controller.history.some((item) => item.citations.length) ? (
+              <p className="surface-inset px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+                Bạn có thể <Link href={`/meetings/${target.meetingId}/context`} className="font-medium text-primary hover:underline">thêm paper hoặc slide</Link> để RTTA giải thích sát với tài liệu của cuộc họp hơn.
+              </p>
             ) : null}
+
+            <section className="surface-card sticky bottom-0 space-y-3 p-4 shadow-float">
+              <label htmlFor="explain-question" className="text-sm font-medium">
+                {controller.history.length ? "Hỏi thêm về đoạn này" : "Bạn muốn hiểu điều gì?"}
+              </label>
+              <Textarea
+                id="explain-question"
+                value={controller.userQuestion}
+                onChange={(event) => controller.setUserQuestion(event.target.value.slice(0, 2_000))}
+                placeholder={controller.history.length ? "Nhập câu hỏi tiếp theo…" : "Ví dụ: Khái niệm này có nghĩa là gì?"}
+                className="min-h-24 resize-none"
+                disabled={controller.loading}
+              />
+              <div className="flex justify-end">
+                <Button onClick={() => void controller.generate("QUICK")} disabled={controller.loading || !controller.selectedText.trim()}>
+                  {controller.loading ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
+                  {controller.history.length ? "Hỏi tiếp" : "Giải thích đoạn này"}
+                </Button>
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">RTTA chỉ trả lời khi bạn nhấn nút.</p>
+            </section>
           </div>
         ) : (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            Choose a finalized transcript moment to explain.
+            Chọn một đoạn hoàn chỉnh trong bản ghi để hỏi RTTA.
           </div>
         )}
       </div>

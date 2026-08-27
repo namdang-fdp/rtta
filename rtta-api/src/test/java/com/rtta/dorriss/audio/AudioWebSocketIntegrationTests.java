@@ -40,7 +40,8 @@ import org.springframework.context.annotation.Import;
 		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = {
 				"spike.enabled=false",
-				"rtta.translation.provider=fake"
+				"rtta.translation.provider=fake",
+				"rtta.security.extension-device-token=test-device-token"
 		})
 @Import(AudioWebSocketIntegrationTests.FakeProviderConfiguration.class)
 class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
@@ -298,6 +299,13 @@ class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	}
 
 	private WebSocket connect(TestListener listener) throws Exception {
+		WebSocket socket = rawConnect(listener);
+		socket.sendText("{\"type\":\"AUTH\",\"token\":\"test-device-token\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("AUTHENTICATED");
+		return socket;
+	}
+
+	private WebSocket rawConnect(TestListener listener) throws Exception {
 		return HttpClient.newBuilder()
 				.connectTimeout(Duration.ofSeconds(2))
 				.build()
@@ -305,6 +313,24 @@ class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 				.connectTimeout(Duration.ofSeconds(2))
 				.buildAsync(URI.create("ws://localhost:" + port + "/ws/audio"), listener)
 				.get(2, TimeUnit.SECONDS);
+	}
+
+	@Test
+	void rejectsStartBeforeDeviceAuthentication() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = rawConnect(listener);
+		socket.sendText(startMessage(UUID.randomUUID()), true).join();
+		assertThat(listener.nextText()).isEqualTo("ERROR");
+		assertThat(translationProvider.openAttemptCount()).isZero();
+	}
+
+	@Test
+	void invalidDeviceAuthenticationClosesWithoutOpeningAzure() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = rawConnect(listener);
+		socket.sendText("{\"type\":\"AUTH\",\"token\":\"invalid\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("ERROR");
+		assertThat(translationProvider.openAttemptCount()).isZero();
 	}
 
 	private String startMessage(UUID sessionId) {

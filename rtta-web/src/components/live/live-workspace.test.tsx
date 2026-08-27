@@ -30,6 +30,8 @@ const actions = {
     userQuestion: "",
     setUserQuestion: vi.fn(),
     response: null,
+    history: [],
+    historyLoading: false,
     loading: false,
     error: null,
     open: vi.fn(),
@@ -46,8 +48,8 @@ describe("LiveWorkspaceView", () => {
   it("renders the idle waiting state", () => {
     renderState({ ...initialLiveMeetingState, connectionState: "connected" })
 
-    expect(screen.getByRole("heading", { name: "Ready for your meeting" })).toBeInTheDocument()
-    expect(screen.getByText(/Start the RTTA extension/)).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Sẵn sàng cho cuộc họp" })).toBeInTheDocument()
+    expect(screen.getByText(/Bắt đầu từ tiện ích RTTA/)).toBeInTheDocument()
   })
 
   it("renders Vietnamese as primary and English as secondary in the live state", () => {
@@ -89,9 +91,9 @@ describe("LiveWorkspaceView", () => {
     expect(vietnamese).toHaveAttribute("lang", "vi")
     expect(english).toHaveAttribute("data-language-priority", "secondary")
     expect(english).toHaveAttribute("lang", "en")
-    expect(screen.getByText("Live")).toBeInTheDocument()
+    expect(screen.getByText("Trực tiếp")).toBeInTheDocument()
     expect(screen.getByText("EN → VI")).toBeInTheDocument()
-    fireEvent.click(screen.getByRole("button", { name: "Start meeting recording" }))
+    fireEvent.click(screen.getByRole("button", { name: "Bắt đầu ghi âm cuộc họp" }))
     expect(actions.onRecordingToggle).toHaveBeenCalled()
   })
 
@@ -107,7 +109,7 @@ describe("LiveWorkspaceView", () => {
       recordingActive
     />)
 
-    expect(screen.getByRole("button", { name: "Stop meeting recording" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Dừng ghi âm cuộc họp" })).toBeInTheDocument()
   })
 
   it("links a stopped session to its persisted meeting workspace", () => {
@@ -118,14 +120,14 @@ describe("LiveWorkspaceView", () => {
       lastMeetingId: "completed-meeting",
     })
 
-    expect(screen.getByRole("link", { name: "Open completed meeting" }))
+    expect(screen.getByRole("link", { name: "Xem tổng quan cuộc họp" }))
       .toHaveAttribute("href", "/meetings/completed-meeting")
   })
 
   it("renders a clear backend disconnected state", () => {
     renderState({ ...initialLiveMeetingState, connectionState: "disconnected" })
 
-    expect(screen.getByRole("heading", { name: "Translation connection lost" })).toBeInTheDocument()
-    expect(screen.getByText(/Check that the Spring service is running/)).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Mất kết nối dịch trực tiếp" })).toBeInTheDocument()
+    expect(screen.getByText(/Vui lòng làm mới trang/)).toBeInTheDocument()
   })
 })

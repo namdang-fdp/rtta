@@ -39,8 +39,9 @@ describe("ResearchContextPage", () => {
     render(<ResearchContextPage meetingId={meeting.id} />)
 
     expect(await screen.findByText("hamiltonian.pdf")).toBeInTheDocument()
-    expect(screen.getByText("Ready for Explain")).toBeInTheDocument()
-    expect(screen.getByText(/SHA-256 aaaaaaaaaa/)).toBeInTheDocument()
+    expect(screen.getByText("Sẵn sàng")).toBeInTheDocument()
+    expect(screen.getByText(/RTTA có thể dùng tài liệu này/)).toBeInTheDocument()
+    expect(screen.queryByText(/RAG|vector|embedding|SHA-256/i)).not.toBeInTheDocument()
   })
 
   it("shows the real processing state after upload", async () => {
@@ -48,15 +49,24 @@ describe("ResearchContextPage", () => {
     const processing = { ...ready, id: "document-2", fileName: "slides.pptx", status: "PROCESSING" as const, processedAt: null }
     vi.mocked(uploadDocument).mockResolvedValue(processing)
     render(<ResearchContextPage meetingId={meeting.id} />)
-    await screen.findByText("No research material attached")
+    await screen.findByText("Chưa có tài liệu nghiên cứu")
 
     const file = new File(["presentation"], "slides.pptx", {
       type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     })
-    fireEvent.change(screen.getByLabelText("Research document file"), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText("Tệp tài liệu nghiên cứu"), { target: { files: [file] } })
 
     await waitFor(() => expect(uploadDocument).toHaveBeenCalledWith(meeting.id, file))
     expect(await screen.findByText("slides.pptx")).toBeInTheDocument()
-    expect(screen.getByText("Processing")).toBeInTheDocument()
+    expect(screen.getByText("Đang xử lý…")).toBeInTheDocument()
+  })
+
+  it("uses clear normal-user copy without architecture jargon", async () => {
+    vi.mocked(listDocuments).mockResolvedValue([])
+    render(<ResearchContextPage meetingId={meeting.id} />)
+
+    expect(await screen.findByRole("heading", { name: "Tài liệu nghiên cứu" })).toBeInTheDocument()
+    expect(screen.getByText(/RTTA sẽ sử dụng chúng khi bạn hỏi AI/)).toBeInTheDocument()
+    expect(screen.queryByText(/RAG|vector|embedding|server-side|bucket/i)).not.toBeInTheDocument()
   })
 })

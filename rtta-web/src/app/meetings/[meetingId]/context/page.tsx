@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import { ResearchContextPage } from "@/components/context/research-context-page"
 
 export const metadata: Metadata = {
-  title: "Research context · RTTA Web",
-  description: "Meeting-scoped papers and slides for contextual RTTA explanations.",
+  title: "Tài liệu nghiên cứu · RTTA",
+  description: "Paper, slide và tài liệu giúp RTTA giải thích sát với cuộc họp.",
 }
 
 export default async function MeetingContextRoute({ params }: { params: Promise<{ meetingId: string }> }) {

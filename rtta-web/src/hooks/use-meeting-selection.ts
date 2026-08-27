@@ -34,7 +34,7 @@ export function useMeetingSelection(requestedMeetingId?: string) {
         if (caught instanceof DOMException && caught.name === "AbortError") return
         setMeeting(null)
         setResolvedMeetingId(null)
-        setError(caught instanceof Error ? caught.message : "Meeting history is unavailable.")
+        setError("Không thể tải thông tin cuộc họp. Vui lòng thử lại.")
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }

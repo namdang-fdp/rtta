@@ -1,11 +1,13 @@
 package com.rtta.dorriss.recording;
 
-import java.net.URI;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 public interface RecordingStorage {
 
 	void upload(String objectKey, Path wavFile);
 
-	URI playbackUrl(String objectKey);
+	long size(String objectKey);
+
+	InputStream open(String objectKey, long offset, long length);
 }

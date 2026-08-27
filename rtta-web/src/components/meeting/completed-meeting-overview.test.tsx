@@ -79,6 +79,9 @@ describe("CompletedMeetingOverview", () => {
     expect(await screen.findByText("Buổi họp phân tích Hamiltonian.")).toBeInTheDocument()
     expect(screen.getByText("Hamiltonian quyết định sự tiến triển theo thời gian.")).toBeInTheDocument()
     expect(screen.getByText("Compare with the source paper.")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Tóm tắt" })).toBeInTheDocument()
+    expect(screen.queryByText("# Tóm tắt")).not.toBeInTheDocument()
+    expect(screen.queryByText("gemini-test-flash")).not.toBeInTheDocument()
     expect(screen.queryByText(/Action Items/i)).not.toBeInTheDocument()
   })
 
@@ -88,11 +91,22 @@ describe("CompletedMeetingOverview", () => {
 
     render(<CompletedMeetingOverview meetingId={meeting.id} />)
 
-    expect(await screen.findByText("No summary has been generated")).toBeInTheDocument()
+    expect(await screen.findByText("Chưa có bản tóm tắt")).toBeInTheDocument()
     expect(generateMeetingSummary).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole("button", { name: "Generate Summary" }))
+    fireEvent.click(screen.getByRole("button", { name: "Tạo bản tóm tắt" }))
 
     await waitFor(() => expect(generateMeetingSummary).toHaveBeenCalledWith(meeting.id))
     expect(await screen.findByText("Buổi họp phân tích Hamiltonian.")).toBeInTheDocument()
+  })
+
+  it("shows a friendly retry state without technical failure details", async () => {
+    vi.mocked(getMeetingSummary).mockResolvedValue(null)
+    vi.mocked(generateMeetingSummary).mockRejectedValue(new Error("FAILED: upstream model timeout"))
+    render(<CompletedMeetingOverview meetingId={meeting.id} />)
+    fireEvent.click(await screen.findByRole("button", { name: "Tạo bản tóm tắt" }))
+
+    expect(await screen.findByText("Không thể tạo bản tóm tắt.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Thử lại" })).toBeInTheDocument()
+    expect(screen.queryByText(/FAILED|model timeout/i)).not.toBeInTheDocument()
   })
 })

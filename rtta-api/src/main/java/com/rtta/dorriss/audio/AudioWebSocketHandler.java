@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.rtta.dorriss.live.LiveSessionHub;
 import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
 import com.rtta.dorriss.recording.MeetingRecordingService;
+import com.rtta.dorriss.security.RttaSecurityProperties;
+import com.rtta.dorriss.security.SecretVerifier;
 import com.rtta.dorriss.transcript.TranscriptUtterance;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -41,7 +44,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	private final LiveSessionHub liveSessionHub;
 	private final RealtimeMeetingCoordinator meetingCoordinator;
 	private final MeetingRecordingService recordingService;
+	private final RttaSecurityProperties securityProperties;
+	private final SecretVerifier secretVerifier;
 	private final Map<String, AudioConnectionSession> activeSessions = new ConcurrentHashMap<>();
+	private final Set<String> authenticatedConnections = ConcurrentHashMap.newKeySet();
 	private final Map<String, SerializedOutboundWebSocket> outboundConnections =
 			new ConcurrentHashMap<>();
 
@@ -51,13 +57,17 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			TranslationWireProtocol translationWireProtocol,
 			LiveSessionHub liveSessionHub,
 			RealtimeMeetingCoordinator meetingCoordinator,
-			MeetingRecordingService recordingService) {
+			MeetingRecordingService recordingService,
+			RttaSecurityProperties securityProperties,
+			SecretVerifier secretVerifier) {
 		this.controlProtocol = controlProtocol;
 		this.translationProvider = translationProvider;
 		this.translationWireProtocol = translationWireProtocol;
 		this.liveSessionHub = liveSessionHub;
 		this.meetingCoordinator = meetingCoordinator;
 		this.recordingService = recordingService;
+		this.securityProperties = securityProperties;
+		this.secretVerifier = secretVerifier;
 	}
 
 	int activeSessionCount() {
@@ -90,6 +100,15 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			return;
 		}
 
+		if (command instanceof AuthCommand auth) {
+			handleAuth(socket, auth);
+			return;
+		}
+		if (!authenticatedConnections.contains(socket.getId())) {
+			failConnection(socket, "authentication-required", "Device authentication is required");
+			return;
+		}
+
 		if (command instanceof StartCommand start) {
 			handleStart(socket, start);
 			return;
@@ -100,6 +119,10 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	@Override
 	protected void handleBinaryMessage(WebSocketSession socket, BinaryMessage message) {
+		if (!authenticatedConnections.contains(socket.getId())) {
+			failConnection(socket, "authentication-required", "Device authentication is required");
+			return;
+		}
 		AudioConnectionSession session = activeSessions.get(socket.getId());
 		if (session == null) {
 			failConnection(socket, "binary-before-start", "Binary audio received before START");
@@ -149,6 +172,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	@Override
 	public void afterConnectionClosed(WebSocketSession socket, CloseStatus status) {
+		authenticatedConnections.remove(socket.getId());
 		SerializedOutboundWebSocket outbound = outboundConnections.remove(socket.getId());
 		if (outbound != null) {
 			outbound.markFailed();
@@ -162,6 +186,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	@Override
 	public void handleTransportError(WebSocketSession socket, Throwable exception) {
+		authenticatedConnections.remove(socket.getId());
 		SerializedOutboundWebSocket outbound = outboundConnections.remove(socket.getId());
 		if (outbound != null) {
 			outbound.markFailed();
@@ -183,6 +208,19 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 		catch (IOException | RuntimeException closeException) {
 			LOGGER.debug("Unable to close failed WebSocket connection {}", socket.getId(), closeException);
 		}
+	}
+
+	private void handleAuth(WebSocketSession socket, AuthCommand command) {
+		if (authenticatedConnections.contains(socket.getId())) {
+			failConnection(socket, "duplicate-auth", "Device is already authenticated");
+			return;
+		}
+		if (!secretVerifier.matches(command.token(), securityProperties.getExtensionDeviceToken())) {
+			failConnection(socket, "authentication-failed", "Device authentication failed");
+			return;
+		}
+		authenticatedConnections.add(socket.getId());
+		sendText(socket, "AUTHENTICATED", "AUTHENTICATED acknowledgement");
 	}
 
 	private void handleStart(WebSocketSession socket, StartCommand command) {
@@ -256,6 +294,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	}
 
 	private void failConnection(WebSocketSession socket, String reason, String detail) {
+		authenticatedConnections.remove(socket.getId());
 		AudioConnectionSession session = activeSessions.remove(socket.getId());
 		if (session != null) {
 			closeTranslation(session, reason);

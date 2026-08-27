@@ -30,7 +30,7 @@ export function LiveWorkspace() {
   const bookmarks = useMeetingBookmarks(state.activeMeetingId)
   const notes = useMeetingNotes(state.activeMeetingId)
   const recordings = useMeetingRecordings(state.activeMeetingId)
-  const useDockedConceptPanel = useMediaQuery("(min-width: 1320px)")
+  const useDockedConceptPanel = useMediaQuery("(min-width: 1500px)")
 
   return (
     <>
@@ -58,6 +58,8 @@ export function LiveWorkspace() {
               sourceText: utterance.sourceText,
               translatedText: utterance.translatedText,
               offsetMs: utterance.offsetMs,
+              bookmarked: bookmarks.bookmarkedIds.has(utterance.utteranceId),
+              noteContent: notes.noteByUtteranceId[utterance.utteranceId]?.content ?? null,
             })
           }
         }}
@@ -160,7 +162,7 @@ export function LiveWorkspaceView({
           <div className="flex shrink-0 items-center gap-3 border-b border-destructive/20 bg-destructive/7 px-4 py-2.5 text-sm text-destructive md:px-8">
             <CircleAlert className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{state.lastError}</span>
-            <Button variant="ghost" size="icon-xs" onClick={clearError} aria-label="Dismiss error">
+            <Button variant="ghost" size="icon-xs" onClick={clearError} aria-label="Đóng thông báo lỗi">
               <X />
             </Button>
           </div>
@@ -170,7 +172,7 @@ export function LiveWorkspaceView({
           <div className="flex shrink-0 items-center gap-3 border-b border-destructive/20 bg-destructive/7 px-4 py-2.5 text-sm text-destructive md:px-8">
             <CircleAlert className="size-4 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{bookmarkError}</span>
-            <Button variant="ghost" size="icon-xs" onClick={clearBookmarkError} aria-label="Dismiss bookmark error">
+            <Button variant="ghost" size="icon-xs" onClick={clearBookmarkError} aria-label="Đóng thông báo">
               <X />
             </Button>
           </div>
@@ -184,10 +186,10 @@ export function LiveWorkspaceView({
           >
             <WifiOff className="size-4 shrink-0 text-primary" />
             <span>
-              <strong className="font-medium text-foreground">Translation connection lost.</strong>{" "}
+              <strong className="font-medium text-foreground">Kết nối dịch trực tiếp bị gián đoạn.</strong>{" "}
               {state.connectionState === "reconnecting"
-                ? "Trying to reconnect…"
-                : "Check that the Spring service is running, then refresh this page."}
+                ? "RTTA đang thử kết nối lại…"
+                : "Vui lòng làm mới trang để kết nối lại."}
             </span>
           </div>
         ) : null}
@@ -212,8 +214,13 @@ export function LiveWorkspaceView({
       </section>
 
       {explanationOpen && dockExplanation ? (
-        <aside className="hidden h-full w-[400px] shrink-0 border-l min-[1320px]:block">
-          <ConceptExplanationPanel controller={explanationController} onClose={closeExplanation} compactHeader />
+        <aside className="hidden h-full w-[520px] shrink-0 bg-surface-canvas p-3 pl-0 min-[1500px]:block">
+          <ConceptExplanationPanel
+            controller={explanationController}
+            onClose={closeExplanation}
+            compactHeader
+            className="surface-panel overflow-hidden"
+          />
         </aside>
       ) : null}
 
@@ -222,11 +229,11 @@ export function LiveWorkspaceView({
           <SheetContent
             side="right"
             showCloseButton={false}
-            className="w-[min(94vw,450px)] gap-0 p-0 sm:max-w-[450px]"
+            className="w-[min(96vw,540px)] gap-0 p-0 sm:max-w-[540px]"
           >
             <SheetHeader className="sr-only">
-              <SheetTitle>Concept explanation</SheetTitle>
-              <SheetDescription>Contextual Vietnamese explanation for a selected scientific term.</SheetDescription>
+              <SheetTitle>Giải thích đoạn này</SheetTitle>
+              <SheetDescription>Lịch sử hỏi đáp bằng tiếng Việt gắn với đoạn bản ghi đã chọn.</SheetDescription>
             </SheetHeader>
             <ConceptExplanationPanel controller={explanationController} onClose={closeExplanation} />
           </SheetContent>
@@ -258,22 +265,22 @@ function LiveHeader({
         <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
           <div className="min-w-0">
             <h1 className="editorial-title truncate text-[clamp(1.45rem,2.7vw,2.35rem)] font-bold leading-tight">
-              {live ? "Quantum Physics Seminar" : "RTTA Live"}
+              {live ? "Cuộc họp nghiên cứu" : "RTTA Trực tiếp"}
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2.5 text-xs text-muted-foreground sm:text-sm">
               {live ? (
                 <span className={`inline-flex items-center gap-2 font-medium ${interrupted ? "text-muted-foreground" : "text-primary"}`}>
                   <span className={`size-2 rounded-full ${interrupted ? "bg-muted-foreground" : "bg-primary"}`} />
                   {state.connectionState === "reconnecting"
-                    ? "Reconnecting…"
+                    ? "Đang kết nối lại…"
                     : state.connectionState === "disconnected"
-                      ? "Connection lost"
-                      : "Live"}
+                      ? "Mất kết nối"
+                      : "Trực tiếp"}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 font-medium text-muted-foreground">
                   <span className="size-2 rounded-full bg-success" />
-                  Ready
+                  Sẵn sàng
                 </span>
               )}
               <span aria-hidden="true">·</span>
@@ -295,14 +302,14 @@ function LiveHeader({
               size="sm"
               onClick={onRecordingToggle}
               disabled={recordingPending || interrupted || !state.activeMeetingId}
-              aria-label={recordingActive ? "Stop meeting recording" : "Start meeting recording"}
+              aria-label={recordingActive ? "Dừng ghi âm cuộc họp" : "Bắt đầu ghi âm cuộc họp"}
             >
               {recordingPending ? <LoaderCircle className="animate-spin" /> : recordingActive ? <CircleStop /> : <Mic />}
-              {recordingActive ? "Stop recording" : "Record"}
+              {recordingActive ? "Dừng ghi âm" : "Ghi âm"}
             </Button>
           ) : (
-            <div className="hidden items-center gap-2 rounded-full border bg-surface-soft px-3 py-1.5 text-xs text-muted-foreground md:flex">
-              <RadioTower className="size-3.5" />English speech · Vietnamese reading
+            <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-surface-soft px-3 py-1.5 text-xs text-muted-foreground md:flex">
+              <RadioTower className="size-3.5" />Nghe tiếng Anh · đọc tiếng Việt
             </div>
           )}
         </div>
@@ -323,9 +330,9 @@ function ConnectionStateSurface({ state }: { state: LiveMeetingState }) {
     return (
       <CenteredState
         icon={<PlugZap className="size-6" />}
-        eyebrow="Preparing live translation"
-        title="Connecting to RTTA…"
-        description="The workspace will be ready as soon as the local translation service responds."
+        eyebrow="Chuẩn bị dịch trực tiếp"
+        title="Đang kết nối với RTTA…"
+        description="Không gian làm việc sẽ sẵn sàng sau ít phút."
       />
     )
   }
@@ -334,12 +341,12 @@ function ConnectionStateSurface({ state }: { state: LiveMeetingState }) {
     return (
       <CenteredState
         icon={<WifiOff className="size-6" />}
-        eyebrow="Connection interrupted"
-        title="Translation connection lost"
+        eyebrow="Kết nối bị gián đoạn"
+        title="Mất kết nối dịch trực tiếp"
         description={
           reconnecting
-            ? "Trying to reconnect… You can keep this workspace open."
-            : "RTTA could not reconnect. Check that the Spring service is running, then refresh this page."
+            ? "RTTA đang thử kết nối lại. Bạn có thể giữ nguyên trang này."
+            : "RTTA chưa thể kết nối lại. Vui lòng làm mới trang."
         }
       />
     )
@@ -349,13 +356,13 @@ function ConnectionStateSurface({ state }: { state: LiveMeetingState }) {
     return (
       <CenteredState
         icon={<RadioTower className="size-6" />}
-        eyebrow="Meeting ended"
-        title="Translation session complete"
-        description="RTTA is ready to attach automatically when you begin the next meeting."
+        eyebrow="Cuộc họp đã kết thúc"
+        title="Đã hoàn tất bản dịch"
+        description="Xem lại tóm tắt, bản ghi, ghi chú và tài liệu của cuộc họp vừa kết thúc."
       >
         {state.lastMeetingId ? (
           <Button asChild className="mt-6">
-            <Link href={`/meetings/${state.lastMeetingId}`}>Open completed meeting</Link>
+            <Link href={`/meetings/${state.lastMeetingId}`}>Xem tổng quan cuộc họp</Link>
           </Button>
         ) : null}
       </CenteredState>
@@ -365,9 +372,9 @@ function ConnectionStateSurface({ state }: { state: LiveMeetingState }) {
   return (
     <CenteredState
       icon={<RadioTower className="size-6" />}
-      eyebrow="Waiting for meeting"
-      title="Ready for your meeting"
-      description="Start the RTTA extension and begin translation. This page will attach automatically."
+      eyebrow="Đang chờ cuộc họp"
+      title="Sẵn sàng cho cuộc họp"
+      description="Bắt đầu từ tiện ích RTTA và tiến hành dịch. Trang này sẽ tự động kết nối."
     />
   )
 }

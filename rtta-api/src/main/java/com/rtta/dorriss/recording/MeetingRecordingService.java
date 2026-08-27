@@ -1,7 +1,7 @@
 package com.rtta.dorriss.recording;
 
 import java.io.IOException;
-import java.net.URI;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -135,7 +135,7 @@ public class MeetingRecordingService {
 				.stream().map(RecordingResponse::from).toList();
 	}
 
-	public URI playbackUrl(UUID meetingId, UUID recordingId) {
+	public RecordingContent content(UUID meetingId, UUID recordingId) {
 		requireMeeting(meetingId);
 		Recording recording = recordingRepository.findByIdAndMeetingId(recordingId, meetingId)
 				.orElseThrow(() -> new RecordingNotFoundException(recordingId));
@@ -143,14 +143,20 @@ public class MeetingRecordingService {
 			throw conflict("Recording playback is not ready");
 		}
 		try {
-			return storage.playbackUrl(recording.getObjectKey());
+			return new RecordingContent(recording.getObjectKey(), storage.size(recording.getObjectKey()));
 		}
 		catch (RuntimeException exception) {
-			LOGGER.warn("RTTA RECORDING playbackUrlFailed meeting={} recording={} cause={}",
+			LOGGER.warn("RTTA RECORDING contentLookupFailed meeting={} recording={} cause={}",
 					meetingId, recordingId, exception.getClass().getSimpleName());
 			throw unavailable("Recording playback is temporarily unavailable");
 		}
 	}
+
+	public InputStream open(RecordingContent content, long offset, long length) {
+		return storage.open(content.objectKey(), offset, length);
+	}
+
+	public record RecordingContent(String objectKey, long size) { }
 
 	private RecordingResponse finalizeAsync(ActiveRecording capture) {
 		WavStreamingWriter.WavResult wav;

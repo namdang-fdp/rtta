@@ -6,7 +6,7 @@ import {
 export const DEFAULT_BACKEND_WEBSOCKET_URL =
   "ws://localhost:8080/ws/audio";
 
-export type BackendAcknowledgement = "STARTED" | "STOPPED" | "ERROR";
+export type BackendAcknowledgement = "AUTHENTICATED" | "STARTED" | "STOPPED" | "ERROR";
 
 export type TranslationEventType = "PARTIAL" | "FINAL";
 
@@ -47,6 +47,15 @@ export interface StartControlMessage {
   readonly chunkMs: 50;
 }
 
+export interface AuthControlMessage {
+  readonly type: "AUTH";
+  readonly token: string;
+}
+
+export function createAuthControlMessage(token: string): AuthControlMessage {
+  return { type: "AUTH", token };
+}
+
 export interface StopControlMessage {
   readonly type: "STOP";
   readonly sessionId: string;
@@ -80,6 +89,7 @@ export function parseBackendAcknowledgement(
 
   const acknowledgement = value.trim();
   if (
+    acknowledgement === "AUTHENTICATED" ||
     acknowledgement === "STARTED" ||
     acknowledgement === "STOPPED" ||
     acknowledgement === "ERROR"

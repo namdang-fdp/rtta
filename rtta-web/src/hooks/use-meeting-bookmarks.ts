@@ -51,7 +51,7 @@ export function useMeetingBookmarks(meetingId: string | null) {
         setState({
           meetingId,
           byUtteranceId: {},
-          error: caught instanceof Error ? caught.message : "Bookmarks are unavailable.",
+          error: "Không thể tải các đoạn đã lưu. Vui lòng thử lại.",
         })
       }
     }
@@ -67,7 +67,7 @@ export function useMeetingBookmarks(meetingId: string | null) {
     if (!meetingId) {
       setState((current) => ({
         ...current,
-        error: "This meeting is not stored yet, so the bookmark could not be saved.",
+        error: "Cuộc họp chưa được lưu nên chưa thể lưu đoạn này.",
       }))
       return
     }
@@ -85,11 +85,11 @@ export function useMeetingBookmarks(meetingId: string | null) {
       })
       try {
         await deleteBookmark(meetingId, existing.id)
-      } catch (caught) {
+      } catch {
         setState((current) => current.meetingId === meetingId ? ({
           meetingId,
           byUtteranceId: { ...current.byUtteranceId, [target.id]: existing },
-          error: caught instanceof Error ? caught.message : "The bookmark could not be removed.",
+          error: "Không thể bỏ lưu đoạn này. Vui lòng thử lại.",
         }) : current)
       } finally {
         setPendingIds((current) => {
@@ -127,14 +127,14 @@ export function useMeetingBookmarks(meetingId: string | null) {
         byUtteranceId: { ...current.byUtteranceId, [target.id]: saved },
         error: null,
       }) : current)
-    } catch (caught) {
+    } catch {
       setState((current) => {
         const next = { ...current.byUtteranceId }
         delete next[target.id]
         return current.meetingId === meetingId ? {
           meetingId,
           byUtteranceId: next,
-          error: caught instanceof Error ? caught.message : "The bookmark could not be saved.",
+          error: "Không thể lưu đoạn này. Vui lòng thử lại.",
         } : current
       })
     } finally {

@@ -30,7 +30,7 @@ export function useMeetingRecordings(meetingId: string | null) {
         await load(controller.signal)
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return
-        setError(caught instanceof Error ? caught.message : "Recordings are unavailable.")
+        setError("Không thể tải bản ghi âm. Vui lòng thử lại.")
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
@@ -63,8 +63,8 @@ export function useMeetingRecordings(meetingId: string | null) {
     try {
       const recording = await startRecording(meetingId)
       setRecordings((current) => [recording, ...current])
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Recording could not start.")
+    } catch {
+      setError("Không thể bắt đầu ghi âm. Vui lòng thử lại.")
     } finally {
       setPending(false)
     }
@@ -77,8 +77,8 @@ export function useMeetingRecordings(meetingId: string | null) {
     try {
       const updated = await stopRecording(meetingId, activeRecording.id)
       setRecordings((current) => current.map((recording) => recording.id === updated.id ? updated : recording))
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Recording could not stop cleanly.")
+    } catch {
+      setError("Không thể kết thúc ghi âm đúng cách. Vui lòng thử lại.")
     } finally {
       setPending(false)
     }

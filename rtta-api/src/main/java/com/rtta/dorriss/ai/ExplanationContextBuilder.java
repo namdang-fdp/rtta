@@ -30,6 +30,7 @@ public class ExplanationContextBuilder {
 	private final TranscriptUtteranceRepository utteranceRepository;
 	private final BookmarkRepository bookmarkRepository;
 	private final ResearchNoteRepository noteRepository;
+	private final AiExplanationRepository explanationRepository;
 	private final Optional<ResearchContextRetriever> contextRetriever;
 
 	public ExplanationContextBuilder(
@@ -37,11 +38,13 @@ public class ExplanationContextBuilder {
 			TranscriptUtteranceRepository utteranceRepository,
 			BookmarkRepository bookmarkRepository,
 			ResearchNoteRepository noteRepository,
+			AiExplanationRepository explanationRepository,
 			Optional<ResearchContextRetriever> contextRetriever) {
 		this.meetingRepository = meetingRepository;
 		this.utteranceRepository = utteranceRepository;
 		this.bookmarkRepository = bookmarkRepository;
 		this.noteRepository = noteRepository;
+		this.explanationRepository = explanationRepository;
 		this.contextRetriever = contextRetriever;
 	}
 
@@ -65,6 +68,8 @@ public class ExplanationContextBuilder {
 				.findAllByMeetingIdAndUtteranceIdOrderByCreatedAtAscIdAsc(meetingId, utteranceId);
 		Bookmark bookmark = bookmarkRepository.findByMeetingIdAndUtteranceId(meetingId, utteranceId)
 				.orElse(null);
+		List<AiExplanation> previousExplanations = explanationRepository
+				.findAllByMeetingIdAndUtteranceIdOrderByCreatedAtAscIdAsc(meetingId, utteranceId);
 
 		String retrievalQuery = String.join("\n", List.of(
 				selectedText,
@@ -102,12 +107,13 @@ public class ExplanationContextBuilder {
 		snapshot.put("targetUtterance", utteranceMap(target));
 		snapshot.put("followingUtterances", following.stream().map(this::utteranceMap).toList());
 		snapshot.put("annotations", annotationSnapshot);
+		snapshot.put("previousExplanations", previousExplanations.stream().map(this::explanationMap).toList());
 		snapshot.put("documents", documentSnapshot);
 
 		List<Map<String, Object>> citations = documents.stream().map(this::citationMap).toList();
 		return new BuiltExplanationContext(
 				Map.copyOf(snapshot),
-				buildPrompt(meeting, selectedText, userQuestion, previous, target, following, notes, bookmark, documents),
+				buildPrompt(meeting, selectedText, userQuestion, previous, target, following, notes, bookmark, previousExplanations, documents),
 				citations,
 				previous.size(),
 				following.size(),
@@ -123,6 +129,7 @@ public class ExplanationContextBuilder {
 			List<TranscriptUtterance> following,
 			List<ResearchNote> notes,
 			Bookmark bookmark,
+			List<AiExplanation> previousExplanations,
 			List<ResearchContextChunk> documents) {
 		StringBuilder prompt = new StringBuilder();
 		prompt.append("Hãy giải thích khái niệm được chọn bằng tiếng Việt.\n\n")
@@ -144,6 +151,21 @@ public class ExplanationContextBuilder {
 			}
 			for (ResearchNote note : notes) prompt.append("Ghi chú: ").append(note.getContent()).append('\n');
 			prompt.append("</USER_ANNOTATIONS>\n");
+		}
+
+		if (!previousExplanations.isEmpty()) {
+			prompt.append("\n<PREVIOUS_EXPLANATIONS>\n");
+			previousExplanations.stream()
+					.skip(Math.max(0, previousExplanations.size() - 6L))
+					.forEach(explanation -> {
+						prompt.append("Người dùng: ")
+								.append(explanation.getUserQuestion() == null
+										? "Giải thích đoạn này"
+										: explanation.getUserQuestion())
+								.append('\n')
+								.append("RTTA: ").append(explanation.getResponseMarkdown()).append('\n');
+					});
+			prompt.append("</PREVIOUS_EXPLANATIONS>\n");
 		}
 
 		if (!documents.isEmpty()) {
@@ -181,6 +203,15 @@ public class ExplanationContextBuilder {
 		value.put("content", chunk.content());
 		value.put("metadata", chunk.metadata());
 		value.put("similarity", chunk.similarity());
+		return value;
+	}
+
+	private Map<String, Object> explanationMap(AiExplanation explanation) {
+		Map<String, Object> value = new LinkedHashMap<>();
+		value.put("id", explanation.getId().toString());
+		value.put("selectedText", explanation.getSelectedText());
+		if (explanation.getUserQuestion() != null) value.put("userQuestion", explanation.getUserQuestion());
+		value.put("responseMarkdown", explanation.getResponseMarkdown());
 		return value;
 	}
 

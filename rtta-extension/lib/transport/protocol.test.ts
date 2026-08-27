@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createStartControlMessage,
+  createAuthControlMessage,
   createStopControlMessage,
   DEFAULT_BACKEND_WEBSOCKET_URL,
   parseBackendAcknowledgement,
@@ -26,6 +27,10 @@ function translationJson(overrides: Record<string, unknown> = {}): string {
 
 describe("audio WebSocket protocol", () => {
   it("creates the exact S02 START metadata", () => {
+    expect(createAuthControlMessage("device-secret")).toEqual({
+      type: "AUTH",
+      token: "device-secret",
+    });
     expect(createStartControlMessage("test-session")).toEqual({
       type: "START",
       sessionId: "test-session",
@@ -42,12 +47,13 @@ describe("audio WebSocket protocol", () => {
       sessionId: "test-session",
     });
     expect(parseBackendAcknowledgement(" STARTED ")).toBe("STARTED");
+    expect(parseBackendAcknowledgement("AUTHENTICATED")).toBe("AUTHENTICATED");
     expect(parseBackendAcknowledgement("STOPPED")).toBe("STOPPED");
     expect(parseBackendAcknowledgement("ERROR")).toBe("ERROR");
     expect(parseBackendAcknowledgement("UNKNOWN")).toBeNull();
   });
 
-  it.each(["STARTED", "STOPPED", "ERROR"] as const)(
+  it.each(["AUTHENTICATED", "STARTED", "STOPPED", "ERROR"] as const)(
     "parses the %s control acknowledgement",
     (acknowledgement) => {
       expect(parseBackendTextMessage(acknowledgement)).toEqual({

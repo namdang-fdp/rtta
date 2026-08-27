@@ -33,6 +33,7 @@ class ExplanationContextBuilderIntegrationTests extends PostgresIntegrationTestS
 	@Autowired private BookmarkService bookmarkService;
 	@Autowired private ResearchNoteService noteService;
 	@Autowired private ExplanationContextBuilder contextBuilder;
+	@Autowired private AiExplanationRepository explanationRepository;
 
 	@Test
 	void buildsABoundedChronologicalContextWithOnlyRelevantAnnotations() {
@@ -79,5 +80,46 @@ class ExplanationContextBuilderIntegrationTests extends PostgresIntegrationTestS
 				.doesNotContain("Unrelated private note");
 		assertThat(context.snapshot()).containsEntry("promptVersion", "explain-concept-v1");
 		assertThat(context.citations()).isEmpty();
+	}
+
+	@Test
+	void includesPersistedExplanationHistoryForFollowUpQuestions() {
+		UUID sessionId = UUID.randomUUID();
+		Meeting meeting = meetingLifecycleService.startMeeting(
+				sessionId,
+				"Medical Imaging Seminar",
+				"en-US",
+				"vi",
+				Instant.parse("2026-08-25T00:00:00Z"),
+				Map.of());
+		TranscriptUtterance utterance = transcriptPersistenceService.persistFinal(
+				sessionId,
+				new TranslationEvent(
+						TranslationEventType.FINAL,
+						"X-rays can ionize molecules.",
+						"Tia X có thể ion hóa phân tử.",
+						1_000,
+						500,
+						Instant.parse("2026-08-25T00:00:01Z")),
+				Map.of()).orElseThrow();
+		explanationRepository.save(new AiExplanation(
+				meeting.getId(),
+				utterance.getId(),
+				"Tia X",
+				"Tia X là gì?",
+				Map.of(),
+				"hidden-model-id",
+				"Tia X là bức xạ điện từ năng lượng cao.",
+				List.of(),
+				Instant.parse("2026-08-25T00:00:02Z")));
+
+		BuiltExplanationContext followUp = contextBuilder.build(
+				meeting.getId(),
+				utterance.getId(),
+				"Tia X",
+				"Vì sao có thể gây tổn thương DNA?");
+
+		assertThat(followUp.userPrompt())
+				.contains("<PREVIOUS_EXPLANATIONS>", "Tia X là gì?", "bức xạ điện từ năng lượng cao");
 	}
 }

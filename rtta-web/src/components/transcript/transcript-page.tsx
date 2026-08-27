@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { NoteComposerSheet } from "@/components/notes/note-composer-sheet"
 import { ConceptExplanationPanel } from "@/components/context/concept-explanation-panel"
+import { MeetingNavigation } from "@/components/meeting/meeting-navigation"
 import {
   Sheet,
   SheetContent,
@@ -43,6 +44,9 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-background">
+      {history.meeting && history.resolvedMeetingId ? (
+        <MeetingNavigation meetingId={history.resolvedMeetingId} title={history.meeting.title} active="transcript" />
+      ) : null}
       <header className="shrink-0 border-b px-4 py-5 sm:px-6 md:px-8 xl:px-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -55,15 +59,15 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
               <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
                 {history.meeting
                   ? `${history.meeting.sourceLanguage} → ${history.meeting.targetLanguage}`
-                  : "Meeting archive"}
+                  : "Lịch sử cuộc họp"}
               </span>
             </div>
             <h1 className="editorial-title truncate text-[clamp(1.65rem,3vw,2.7rem)] font-bold leading-tight">
-              {history.meeting?.title ?? "Transcript"}
+              {history.meeting?.title ?? "Bản ghi"}
             </h1>
             {history.meeting ? (
               <p className="mt-2 text-sm text-muted-foreground">
-                {history.meeting.transcriptUtteranceCount.toLocaleString()} finalized utterances
+                {history.meeting.transcriptUtteranceCount.toLocaleString("vi-VN")} đoạn hoàn chỉnh
               </p>
             ) : null}
           </div>
@@ -75,14 +79,14 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search English or Vietnamese…"
-                className="h-10 rounded-full bg-muted pl-9"
-                aria-label="Search transcript"
+                placeholder="Tìm bằng tiếng Anh hoặc tiếng Việt…"
+                className="h-10 bg-surface-soft pl-9"
+                aria-label="Tìm trong bản ghi"
                 disabled={!history.meeting}
               />
             </label>
             <Link href="/" className="text-center text-sm font-medium text-primary hover:underline">
-              Live workspace
+              Màn hình trực tiếp
             </Link>
           </div>
         </div>
@@ -94,26 +98,26 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
             <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
               <AlertCircle className="size-4 shrink-0" />
               <span className="min-w-0 flex-1">{bookmarks.error}</span>
-              <Button variant="ghost" size="sm" onClick={bookmarks.clearError}>Dismiss</Button>
+              <Button variant="ghost" size="sm" onClick={bookmarks.clearError}>Đóng</Button>
             </div>
           ) : null}
           {notes.error ? (
             <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
               <AlertCircle className="size-4 shrink-0" />
               <span className="min-w-0 flex-1">{notes.error}</span>
-              <Button variant="ghost" size="sm" onClick={notes.clearError}>Dismiss</Button>
+              <Button variant="ghost" size="sm" onClick={notes.clearError}>Đóng</Button>
             </div>
           ) : null}
           {history.loading ? (
             <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
               <LoaderCircle className="size-5 animate-spin text-primary" />
-              Loading transcript…
+              Đang tải bản ghi…
             </div>
           ) : history.error ? (
             <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-5 py-12 text-center">
               <AlertCircle className="mx-auto mb-4 size-7 text-destructive" />
-              <h2 className="font-serif text-xl font-bold">Transcript unavailable</h2>
-              <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">{history.error}</p>
+              <h2 className="font-serif text-xl font-bold">Không thể mở bản ghi</h2>
+              <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">Vui lòng quay lại lịch sử cuộc họp và thử lại.</p>
             </div>
           ) : history.utterances.length ? (
             <>
@@ -124,7 +128,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                 >
                   <div className="flex items-center gap-2 text-xs sm:flex-col sm:items-end sm:gap-1 sm:pt-1 sm:text-right">
                     <span className="font-mono text-muted-foreground">{formatOffset(utterance.offsetMs)}</span>
-                    <span className="font-medium text-foreground">Speaker</span>
+                    <span className="font-medium text-foreground">Người nói</span>
                   </div>
 
                   <div className="relative min-w-0 space-y-3">
@@ -135,7 +139,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                     >
                       {utterance.translatedText}
                     </p>
-                    <div className="rounded-lg border-l-2 border-primary/20 bg-surface-soft px-4 py-3">
+                    <div className="surface-quote px-4 py-3">
                       <p
                         lang="en"
                         data-language-priority="secondary"
@@ -145,7 +149,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                       </p>
                     </div>
                     {notes.noteByUtteranceId[utterance.id] ? (
-                      <div className="flex items-start gap-2 rounded-lg bg-secondary/55 px-3 py-2.5 text-sm text-secondary-foreground">
+                      <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-secondary/55 px-3 py-2.5 text-sm text-secondary-foreground">
                         <NotebookPen className="mt-0.5 size-4 shrink-0" />
                         <span>{notes.noteByUtteranceId[utterance.id].content}</span>
                       </div>
@@ -157,7 +161,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                         size="icon-sm"
                         onClick={() => void bookmarks.toggle({ id: utterance.id, offsetMs: utterance.offsetMs })}
                         disabled={bookmarks.pendingIds.has(utterance.id)}
-                        aria-label={bookmarks.bookmarkedIds.has(utterance.id) ? "Remove bookmark" : "Bookmark utterance"}
+                        aria-label={bookmarks.bookmarkedIds.has(utterance.id) ? "Bỏ lưu đoạn này" : "Lưu đoạn này"}
                         aria-pressed={bookmarks.bookmarkedIds.has(utterance.id)}
                         className={bookmarks.bookmarkedIds.has(utterance.id) ? "bg-accent text-primary" : "text-muted-foreground"}
                       >
@@ -167,7 +171,7 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                         variant="ghost"
                         size="icon-sm"
                         disabled={!history.resolvedMeetingId || notes.saving}
-                        aria-label={notes.notedIds.has(utterance.id) ? "Edit research note" : "Add research note"}
+                        aria-label={notes.notedIds.has(utterance.id) ? "Sửa ghi chú" : "Thêm ghi chú"}
                         className={notes.notedIds.has(utterance.id) ? "bg-accent text-primary" : "text-muted-foreground"}
                         onClick={() => history.resolvedMeetingId && notes.open({
                           meetingId: history.resolvedMeetingId,
@@ -183,13 +187,15 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                         variant="ghost"
                         size="icon-sm"
                         disabled={!history.resolvedMeetingId}
-                        aria-label="Explain a concept from this utterance"
+                        aria-label="Hỏi AI về đoạn này"
                         onClick={() => history.resolvedMeetingId && explanation.open({
                           meetingId: history.resolvedMeetingId,
                           utteranceId: utterance.id,
                           sourceText: utterance.sourceText,
                           translatedText: utterance.translatedText,
                           offsetMs: utterance.offsetMs,
+                          bookmarked: bookmarks.bookmarkedIds.has(utterance.id),
+                          noteContent: notes.noteByUtteranceId[utterance.id]?.content ?? null,
                         })}
                       >
                         <Sparkles />
@@ -203,25 +209,25 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
                 <div className="flex justify-center pt-2">
                   <Button variant="outline" onClick={() => void history.loadMore()} disabled={history.loadingMore}>
                     {history.loadingMore ? <LoaderCircle className="animate-spin" /> : null}
-                    Load earlier transcript
+                    Tải thêm bản ghi
                   </Button>
                 </div>
               ) : null}
             </>
           ) : (
-            <div className="rounded-xl border border-dashed py-16 text-center">
+            <div className="surface-empty py-16 text-center">
               <FileText className="mx-auto mb-4 size-7 text-primary" />
               <h2 className="font-serif text-xl font-bold">
                 {history.meeting
-                  ? deferredQuery ? "No matching moments" : "No finalized transcript yet"
-                  : "No meetings yet"}
+                  ? deferredQuery ? "Không tìm thấy đoạn phù hợp" : "Chưa có đoạn hoàn chỉnh"
+                  : "Chưa có cuộc họp nào"}
               </h2>
               <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
                 {history.meeting
                   ? deferredQuery
-                    ? "Try a different scientific term or phrase."
-                    : "Final translations will appear here even when the web workspace is closed."
-                  : "Start capture from the RTTA extension to create the first meeting."}
+                    ? "Hãy thử một thuật ngữ hoặc cụm từ khác."
+                    : "Các bản dịch hoàn chỉnh sẽ được lưu tại đây ngay cả khi bạn đóng trang web."
+                  : "Bắt đầu thu âm từ tiện ích RTTA để tạo cuộc họp đầu tiên."}
               </p>
             </div>
           )}
@@ -238,10 +244,10 @@ export function TranscriptPage({ meetingId }: TranscriptPageProps) {
       />
 
       <Sheet open={Boolean(explanation.target)} onOpenChange={(open) => !open && explanation.close()}>
-        <SheetContent side="right" showCloseButton={false} className="w-[min(94vw,470px)] gap-0 p-0 sm:max-w-[470px]">
+        <SheetContent side="right" showCloseButton={false} className="w-[min(96vw,540px)] gap-0 p-0 sm:max-w-[540px]">
           <SheetHeader className="sr-only">
-            <SheetTitle>Concept explanation</SheetTitle>
-            <SheetDescription>Contextual Vietnamese explanation for a selected scientific term.</SheetDescription>
+            <SheetTitle>Giải thích đoạn này</SheetTitle>
+            <SheetDescription>Lịch sử hỏi đáp bằng tiếng Việt gắn với đoạn bản ghi đã chọn.</SheetDescription>
           </SheetHeader>
           <ConceptExplanationPanel controller={explanation} onClose={explanation.close} />
         </SheetContent>

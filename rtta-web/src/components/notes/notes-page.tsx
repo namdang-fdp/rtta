@@ -5,6 +5,7 @@ import { useState } from "react"
 import { AlertCircle, ArrowLeft, Clock3, FileText, LoaderCircle, NotebookPen, Pencil, Save, Trash2, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { MeetingNavigation } from "@/components/meeting/meeting-navigation"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { useMeetingNotes } from "@/hooks/use-meeting-notes"
@@ -36,7 +37,7 @@ export function NotesPage({ meetingId }: NotesPageProps) {
 
   if (selection.loading) {
     return (
-      <CenteredMessage icon={<LoaderCircle className="size-6 animate-spin" />} title="Loading research notes…" />
+      <CenteredMessage icon={<LoaderCircle className="size-6 animate-spin" />} title="Đang tải ghi chú…" />
     )
   }
 
@@ -44,8 +45,8 @@ export function NotesPage({ meetingId }: NotesPageProps) {
     return (
       <CenteredMessage
         icon={<AlertCircle className="size-6" />}
-        title="Notes unavailable"
-        description={selection.error}
+        title="Không thể mở ghi chú"
+        description="Vui lòng quay lại lịch sử cuộc họp và thử lại."
       />
     )
   }
@@ -54,8 +55,8 @@ export function NotesPage({ meetingId }: NotesPageProps) {
     return (
       <CenteredMessage
         icon={<NotebookPen className="size-6" />}
-        title="No meetings yet"
-        description="Start capture from the RTTA extension before creating meeting-context notes."
+        title="Chưa có cuộc họp nào"
+        description="Hãy bắt đầu một cuộc họp RTTA trước khi tạo ghi chú."
       />
     )
   }
@@ -63,26 +64,28 @@ export function NotesPage({ meetingId }: NotesPageProps) {
   const transcriptHref = `/meetings/${selection.resolvedMeetingId}/transcript`
 
   return (
-    <section className="quiet-scrollbar h-full overflow-y-auto bg-background px-4 py-7 sm:px-6 md:px-8 md:py-10 xl:px-10">
+    <div className="flex h-full min-h-0 flex-col">
+      <MeetingNavigation meetingId={selection.resolvedMeetingId} title={selection.meeting.title} active="notes" />
+      <section className="quiet-scrollbar min-h-0 flex-1 overflow-y-auto bg-background px-4 py-7 sm:px-6 md:px-8 md:py-10 xl:px-10">
       <div className="mx-auto max-w-5xl">
         <header className="border-b border-border pb-8">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-primary">{selection.meeting.status}</Badge>
+            <Badge variant="outline" className="text-primary">{selection.meeting.status === "LIVE" ? "Đang diễn ra" : selection.meeting.status === "COMPLETED" ? "Đã kết thúc" : "Bị gián đoạn"}</Badge>
             <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
               {selection.meeting.sourceLanguage} → {selection.meeting.targetLanguage}
             </span>
           </div>
-          <h1 className="editorial-title text-[clamp(2rem,5vw,3.35rem)] font-bold">Research Notes</h1>
+          <h1 className="editorial-title text-[clamp(2rem,5vw,3.35rem)] font-bold">Ghi chú nghiên cứu</h1>
           <p className="mt-2 text-lg font-medium">{selection.meeting.title}</p>
           <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
-            Notes remain attached to this meeting and, when captured from a transcript moment, preserve its bilingual context.
+            Ghi chú luôn đi cùng cuộc họp. Ghi chú tạo từ một đoạn bản ghi sẽ giữ lại cả ngữ cảnh tiếng Việt và tiếng Anh.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button asChild variant="outline">
-              <Link href={transcriptHref}><FileText />View transcript</Link>
+              <Link href={transcriptHref}><FileText />Xem bản ghi</Link>
             </Button>
             <Button asChild variant="ghost">
-              <Link href="/"><ArrowLeft />Live workspace</Link>
+              <Link href="/"><ArrowLeft />Màn hình trực tiếp</Link>
             </Button>
           </div>
         </header>
@@ -91,22 +94,22 @@ export function NotesPage({ meetingId }: NotesPageProps) {
           <div className="mt-6 flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <AlertCircle className="size-4 shrink-0" />
             <span className="min-w-0 flex-1">{notes.error}</span>
-            <Button variant="ghost" size="sm" onClick={notes.clearError}>Dismiss</Button>
+            <Button variant="ghost" size="sm" onClick={notes.clearError}>Đóng</Button>
           </div>
         ) : null}
 
         <div className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div className="space-y-5">
             {notes.notes.length ? notes.notes.map((note) => (
-              <article key={note.id} className="rounded-xl border bg-card p-5 shadow-sm">
+              <article key={note.id} className="surface-card p-5">
                 <div className="mb-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Clock3 className="size-3.5" />
-                  <span>{note.offsetMs === null ? "Meeting note" : formatOffset(note.offsetMs)}</span>
-                  {note.utteranceId ? <Badge variant="secondary">Transcript linked</Badge> : null}
+                  <span>{note.offsetMs === null ? "Ghi chú cuộc họp" : formatOffset(note.offsetMs)}</span>
+                  {note.utteranceId ? <Badge variant="secondary">Gắn với bản ghi</Badge> : null}
                 </div>
 
                 {note.translatedText ? (
-                  <div className="mb-4 rounded-lg border-l-2 border-primary/25 bg-surface-soft px-4 py-3">
+                  <div className="surface-quote mb-4 px-4 py-3">
                     <p lang="vi" className="font-medium leading-relaxed">{note.translatedText}</p>
                     {note.sourceText ? (
                       <p lang="en" className="mt-2 text-sm leading-relaxed text-muted-foreground">{note.sourceText}</p>
@@ -120,16 +123,16 @@ export function NotesPage({ meetingId }: NotesPageProps) {
                       value={editDraft}
                       onChange={(event) => setEditDraft(event.target.value)}
                       className="min-h-28"
-                      aria-label="Edit research note"
+                      aria-label="Sửa ghi chú nghiên cứu"
                     />
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" onClick={() => setEditingId(null)}><X />Cancel</Button>
+                      <Button variant="ghost" onClick={() => setEditingId(null)}><X />Hủy</Button>
                       <Button
                         onClick={() => void saveEdit(note.id)}
                         disabled={notes.saving || !editDraft.trim()}
                       >
                         {notes.saving ? <LoaderCircle className="animate-spin" /> : <Save />}
-                        Save
+                        Lưu
                       </Button>
                     </div>
                   </div>
@@ -146,7 +149,7 @@ export function NotesPage({ meetingId }: NotesPageProps) {
                           setDeleteCandidate(null)
                         }}
                       >
-                        <Pencil />Edit
+                        <Pencil />Sửa
                       </Button>
                       <Button
                         variant={deleteCandidate === note.id ? "destructive" : "ghost"}
@@ -161,37 +164,37 @@ export function NotesPage({ meetingId }: NotesPageProps) {
                           }
                         }}
                       >
-                        <Trash2 />{deleteCandidate === note.id ? "Confirm delete" : "Delete"}
+                        <Trash2 />{deleteCandidate === note.id ? "Xác nhận xóa" : "Xóa"}
                       </Button>
                     </div>
                   </>
                 )}
               </article>
             )) : (
-              <div className="rounded-xl border border-dashed bg-surface-soft/45 px-6 py-14 text-center">
+              <div className="surface-empty px-6 py-14 text-center">
                 <NotebookPen className="mx-auto mb-4 size-7 text-primary" />
-                <h2 className="editorial-title text-2xl font-bold">No notes for this meeting</h2>
+                <h2 className="editorial-title text-2xl font-bold">Chưa có ghi chú cho cuộc họp này</h2>
                 <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-                  Add one here, or use the note action beside a finalized Live or Transcript utterance.
+                  Tạo ghi chú tại đây hoặc chọn biểu tượng ghi chú cạnh một đoạn hoàn chỉnh trong bản ghi.
                 </p>
               </div>
             )}
           </div>
 
-          <aside className="h-fit rounded-xl border bg-surface-soft/45 p-5">
+          <aside className="surface-card-soft h-fit p-5">
             <div className="flex items-center gap-2 text-primary">
               <NotebookPen className="size-4" />
-              <h2 className="text-sm font-semibold uppercase tracking-[0.12em]">Meeting-level note</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em]">Ghi chú chung</h2>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Capture a thought about the meeting as a whole. For timestamp context, add the note from Live or Transcript.
+              Ghi lại suy nghĩ về toàn bộ cuộc họp. Để gắn với thời điểm cụ thể, hãy tạo ghi chú từ màn hình Trực tiếp hoặc Bản ghi.
             </p>
             <Textarea
               value={generalDraft}
               onChange={(event) => setGeneralDraft(event.target.value)}
-              placeholder="What should you remember?"
+              placeholder="Bạn muốn ghi nhớ điều gì?"
               className="mt-4 min-h-32 bg-background"
-              aria-label="New meeting-level note"
+              aria-label="Ghi chú chung mới"
             />
             <Button
               className="mt-3 w-full"
@@ -199,12 +202,13 @@ export function NotesPage({ meetingId }: NotesPageProps) {
               disabled={notes.saving || !generalDraft.trim()}
             >
               {notes.saving ? <LoaderCircle className="animate-spin" /> : <NotebookPen />}
-              Save note
+              Lưu ghi chú
             </Button>
           </aside>
         </div>
       </div>
-    </section>
+      </section>
+    </div>
   )
 }
 

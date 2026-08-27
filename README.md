@@ -46,3 +46,5 @@ Keep `SPEECH_KEY`, `GEMINI_API_KEY`, database credentials, and MinIO credentials
 - Recording is opt-in and uses 16 kHz mono 16-bit WAV, about 32 KB/s or roughly 576 MB for five hours.
 
 See each application README for its development and validation commands.
+Production container, Cloudflare Tunnel, extension artifact, authentication,
+rollback, and manual acceptance instructions are in [docs/deployment.md](docs/deployment.md).

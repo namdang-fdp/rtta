@@ -1,6 +1,6 @@
 package com.rtta.dorriss.recording;
 
-import java.net.URI;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 import com.rtta.dorriss.storage.MinioObjectStorage;
@@ -27,7 +27,13 @@ public class MinioRecordingStorage implements RecordingStorage {
 	}
 
 	@Override
-	public URI playbackUrl(String objectKey) {
-		return objectStorage.presignedGet(properties.requiredRecordingsBucket(), objectKey);
+	public long size(String objectKey) {
+		return objectStorage.size(properties.requiredRecordingsBucket(), objectKey);
+	}
+
+	@Override
+	public InputStream open(String objectKey, long offset, long length) {
+		return objectStorage.open(
+				properties.requiredRecordingsBucket(), objectKey, offset, length);
 	}
 }

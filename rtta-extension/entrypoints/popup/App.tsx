@@ -4,6 +4,7 @@ import {
   Play,
   Square,
   TriangleAlert,
+  Settings,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -16,6 +17,7 @@ import {
   type CaptureState,
 } from "../../lib/shared/messages";
 import type { TranslationSnapshot } from "../../lib/translation/state";
+import { clearDeviceToken, getDeviceToken, saveDeviceToken } from "../../lib/device/credential";
 
 function formatElapsed(elapsedMs: number): string {
   const totalSeconds = Math.floor(elapsedMs / 1_000);
@@ -70,6 +72,14 @@ function App() {
   const [captureState, setCaptureState] = useState<CaptureState | null>(null);
   const [commandPending, setCommandPending] = useState(false);
   const [clock, setClock] = useState(Date.now());
+  const [credentialConfigured, setCredentialConfigured] = useState<boolean | null>(null);
+  const [editingCredential, setEditingCredential] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [setupError, setSetupError] = useState("");
+
+  useEffect(() => {
+    void getDeviceToken().then((token) => setCredentialConfigured(token !== null));
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -139,6 +149,48 @@ function App() {
     return metrics.elapsedMs + liveOffset;
   }, [captureState, clock, metrics]);
 
+  async function saveCredential(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSetupError("");
+    try {
+      await saveDeviceToken(tokenInput);
+      setTokenInput("");
+      setCredentialConfigured(true);
+      setEditingCredential(false);
+    } catch (error) {
+      setSetupError(errorMessage(error, "Không thể lưu mã thiết bị."));
+    }
+  }
+
+  async function clearCredential() {
+    await clearDeviceToken();
+    setTokenInput("");
+    setCredentialConfigured(false);
+    setEditingCredential(false);
+  }
+
+  if (credentialConfigured === null) {
+    return <main className="h-40 w-80 bg-pink-50" aria-label="Đang tải cấu hình RTTA" />;
+  }
+
+  if (!credentialConfigured || editingCredential) {
+    return (
+      <main className="w-80 bg-pink-50 p-5 text-pink-950">
+        <header className="flex items-center gap-3">
+          <img src="/icon/128.png" alt="" aria-hidden="true" className="size-10" />
+          <div><h1 className="text-xl font-semibold">Kết nối RTTA</h1><p className="text-xs text-pink-700">Thiết lập một lần trên thiết bị này</p></div>
+        </header>
+        <form className="mt-5 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm" onSubmit={(event) => void saveCredential(event)}>
+          <label htmlFor="device-token" className="text-sm font-medium">Mã thiết bị</label>
+          <input id="device-token" type="password" autoComplete="off" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-pink-200 bg-white px-3 outline-none focus:border-pink-500" required autoFocus />
+          {setupError ? <p className="mt-2 text-xs text-rose-700" role="alert">{setupError}</p> : null}
+          <button type="submit" className="mt-4 w-full rounded-xl bg-pink-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-600">Lưu &amp; kết nối</button>
+          {credentialConfigured ? <button type="button" onClick={() => setEditingCredential(false)} className="mt-2 w-full text-xs text-pink-700">Hủy</button> : null}
+        </form>
+      </main>
+    );
+  }
+
   const capturing = captureState?.phase === "capturing";
   const transitioning =
     captureState?.phase === "starting" || captureState?.phase === "stopping";
@@ -190,6 +242,7 @@ function App() {
           <h1 className="text-xl font-semibold tracking-tight">RTTA</h1>
           <p className="text-xs text-pink-700">Local tab audio streaming</p>
         </div>
+        <button type="button" onClick={() => setEditingCredential(true)} className="ml-auto rounded-lg p-2 text-pink-700 hover:bg-pink-100" aria-label="Thay mã thiết bị"><Settings size={17} /></button>
       </header>
 
       <section className="mt-5 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm">
@@ -362,6 +415,7 @@ function App() {
           </div>
         )}
       </section>
+      <button type="button" onClick={() => void clearCredential()} className="mt-3 w-full text-center text-[11px] text-pink-600 hover:text-rose-700">Xóa mã thiết bị</button>
     </main>
   );
 }

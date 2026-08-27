@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer } from "react"
 
 import { parseLiveServerEvent } from "@/lib/protocol/live-protocol"
 import { initialLiveMeetingState, liveMeetingReducer } from "@/lib/realtime/live-reducer"
+import { getRuntimeConfig } from "@/lib/runtime-config"
 
 const DEFAULT_RECONNECT_DELAYS = [1_000, 2_000, 4_000, 8_000, 12_000, 15_000]
 const defaultCreateWebSocket = (socketUrl: string) => new WebSocket(socketUrl)
@@ -15,7 +16,7 @@ export interface UseLiveMeetingOptions {
 }
 
 export function getLiveWebSocketUrl(): string {
-  return process.env.NEXT_PUBLIC_RTTA_LIVE_WS_URL ?? "ws://localhost:8080/ws/live"
+  return getRuntimeConfig().liveWebSocketUrl
 }
 
 export function useLiveMeeting(options: UseLiveMeetingOptions = {}) {

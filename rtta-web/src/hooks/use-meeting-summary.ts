@@ -25,7 +25,7 @@ export function useMeetingSummary(meetingId: string | null) {
         setSummary(await getMeetingSummary(meetingId, controller.signal))
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return
-        setError(caught instanceof Error ? caught.message : "The meeting summary is unavailable.")
+        setError("Không thể tải bản tóm tắt.")
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
@@ -41,8 +41,8 @@ export function useMeetingSummary(meetingId: string | null) {
     setError(null)
     try {
       setSummary(await generateMeetingSummary(meetingId))
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The summary could not be generated.")
+    } catch {
+      setError("Không thể tạo bản tóm tắt.")
     } finally {
       setGenerating(false)
     }

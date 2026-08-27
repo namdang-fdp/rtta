@@ -11,4 +11,6 @@ public interface RecordingRepository extends JpaRepository<Recording, UUID> {
 	List<Recording> findAllByMeetingIdOrderByStartedAtDescIdDesc(UUID meetingId);
 
 	Optional<Recording> findByIdAndMeetingId(UUID id, UUID meetingId);
+
+	boolean existsByMeetingIdAndStatus(UUID meetingId, RecordingStatus status);
 }

@@ -1,12 +1,5 @@
-import type { Metadata } from "next"
-
-import { TranscriptPage } from "@/components/transcript/transcript-page"
-
-export const metadata: Metadata = {
-  title: "Transcript · RTTA Web",
-  description: "Browse persisted English-to-Vietnamese research meeting transcripts.",
-}
+import { redirect } from "next/navigation"
 
 export default function TranscriptRoute() {
-  return <TranscriptPage />
+  redirect("/meetings")
 }

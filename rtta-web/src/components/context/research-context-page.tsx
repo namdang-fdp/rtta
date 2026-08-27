@@ -9,6 +9,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { MeetingNavigation } from "@/components/meeting/meeting-navigation"
 import { useMeetingSelection } from "@/hooks/use-meeting-selection"
 import { useResearchDocuments } from "@/hooks/use-research-documents"
 import type { ResearchDocumentDto } from "@/types/api"
@@ -18,10 +19,10 @@ export function ResearchContextPage({ meetingId }: { meetingId?: string }) {
   const context = useResearchDocuments(selection.resolvedMeetingId)
   const fileInput = useRef<HTMLInputElement>(null)
 
-  if (selection.loading) return <Centered icon={<LoaderCircle className="animate-spin" />} title="Loading research context…" />
-  if (selection.error) return <Centered icon={<AlertCircle />} title="Research context unavailable" detail={selection.error} />
+  if (selection.loading) return <Centered icon={<LoaderCircle className="animate-spin" />} title="Đang tải tài liệu nghiên cứu…" />
+  if (selection.error) return <Centered icon={<AlertCircle />} title="Không thể mở tài liệu nghiên cứu" detail="Vui lòng quay lại lịch sử cuộc họp và thử lại." />
   if (!selection.meeting || !selection.resolvedMeetingId) {
-    return <Centered icon={<BookOpenText />} title="No meetings yet" detail="Start an RTTA meeting before attaching papers or slides." />
+    return <Centered icon={<BookOpenText />} title="Chưa có cuộc họp nào" detail="Hãy bắt đầu một cuộc họp RTTA trước khi thêm paper hoặc slide." />
   }
 
   const uploadSelected = async (files: FileList | null) => {
@@ -32,17 +33,19 @@ export function ResearchContextPage({ meetingId }: { meetingId?: string }) {
   }
 
   return (
-    <section className="quiet-scrollbar h-full overflow-y-auto bg-background px-4 py-7 sm:px-6 md:px-8 md:py-10 xl:px-10">
+    <div className="flex h-full min-h-0 flex-col">
+      <MeetingNavigation meetingId={selection.resolvedMeetingId} title={selection.meeting.title} active="context" />
+      <section className="quiet-scrollbar min-h-0 flex-1 overflow-y-auto bg-background px-4 py-7 sm:px-6 md:px-8 md:py-10 xl:px-10">
       <div className="mx-auto max-w-6xl pb-20">
         <header className="border-b pb-8">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-primary">Meeting-scoped RAG</Badge>
+            <Badge variant="outline" className="text-primary">Dành cho cuộc họp này</Badge>
             <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{selection.meeting.sourceLanguage} → {selection.meeting.targetLanguage}</span>
           </div>
-          <h1 className="editorial-title text-[clamp(2rem,5vw,3.4rem)] font-bold">Research Context</h1>
+          <h1 className="editorial-title text-[clamp(2rem,5vw,3.4rem)] font-bold">Tài liệu nghiên cứu</h1>
           <p className="mt-2 text-lg font-medium">{selection.meeting.title}</p>
           <p className="mt-4 max-w-3xl leading-relaxed text-muted-foreground">
-            Add papers or slides for semantic retrieval during concept explanations. Originals stay in the private document bucket.
+            Thêm paper, slide hoặc tài liệu liên quan đến cuộc họp. RTTA sẽ sử dụng chúng khi bạn hỏi AI để câu trả lời bám sát tài liệu nghiên cứu.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <input
@@ -50,29 +53,29 @@ export function ResearchContextPage({ meetingId }: { meetingId?: string }) {
               type="file"
               accept=".pdf,.pptx,.txt,.docx,application/pdf,text/plain"
               className="sr-only"
-              aria-label="Research document file"
+              aria-label="Tệp tài liệu nghiên cứu"
               onChange={(event) => void uploadSelected(event.target.files)}
             />
             <Button onClick={() => fileInput.current?.click()} disabled={context.uploading}>
               {context.uploading ? <LoaderCircle className="animate-spin" /> : <Upload />}
-              {context.uploading ? "Uploading…" : "Upload paper or slides"}
+              {context.uploading ? "Đang tải lên…" : "Thêm paper hoặc slide"}
             </Button>
-            <Button asChild variant="ghost"><Link href={`/meetings/${selection.resolvedMeetingId}`}><ArrowLeft />Meeting overview</Link></Button>
+            <Button asChild variant="ghost"><Link href={`/meetings/${selection.resolvedMeetingId}`}><ArrowLeft />Tổng quan cuộc họp</Link></Button>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">PDF, PPTX, TXT, or DOCX · up to 50 MB · server-side extraction only</p>
+          <p className="mt-3 text-xs text-muted-foreground">Hỗ trợ PDF, PPTX, TXT hoặc DOCX · tối đa 50 MB</p>
         </header>
 
         {context.error ? (
           <div className="mt-6 flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             <AlertCircle className="size-4 shrink-0" /><span className="flex-1">{context.error}</span>
-            <Button variant="ghost" size="sm" onClick={context.clearError}>Dismiss</Button>
+            <Button variant="ghost" size="sm" onClick={context.clearError}>Đóng</Button>
           </div>
         ) : null}
 
         <section className="py-8">
-          <h2 className="editorial-title mb-6 flex items-center gap-2 text-2xl"><FolderOpen className="size-5 text-primary" />Attached documents</h2>
+          <h2 className="editorial-title mb-6 flex items-center gap-2 text-2xl"><FolderOpen className="size-5 text-primary" />Tài liệu đã thêm</h2>
           {context.loading ? (
-            <div className="rounded-xl border p-12 text-center text-sm text-muted-foreground"><LoaderCircle className="mx-auto mb-3 size-5 animate-spin" />Loading documents…</div>
+            <div className="surface-card p-12 text-center text-sm text-muted-foreground"><LoaderCircle className="mx-auto mb-3 size-5 animate-spin" />Đang tải tài liệu…</div>
           ) : context.documents.length ? (
             <div className="grid gap-4 lg:grid-cols-2">
               {context.documents.map((document) => (
@@ -85,15 +88,16 @@ export function ResearchContextPage({ meetingId }: { meetingId?: string }) {
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed bg-surface-soft/45 px-6 py-14 text-center">
+            <div className="surface-empty px-6 py-14 text-center">
               <BookOpenText className="mx-auto mb-4 size-7 text-primary" />
-              <h2 className="editorial-title text-2xl font-bold">No research material attached</h2>
-              <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">Upload a relevant paper, presentation, or plain-text reference. RTTA will extract and embed it without sending the file to the browser.</p>
+              <h2 className="editorial-title text-2xl font-bold">Chưa có tài liệu nghiên cứu</h2>
+              <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">Thêm một paper, bài trình bày hoặc tài liệu tham khảo. Khi tài liệu sẵn sàng, RTTA có thể dùng nó để giải thích các khái niệm trong cuộc họp.</p>
             </div>
           )}
         </section>
       </div>
-    </section>
+      </section>
+    </div>
   )
 }
 
@@ -101,23 +105,24 @@ function DocumentCard({ document, deleting, onDelete }: { document: ResearchDocu
   const slide = document.mediaType.includes("presentation")
   const processing = document.status === "UPLOADED" || document.status === "PROCESSING"
   return (
-    <article className="rounded-xl border bg-card p-5">
+    <article className="surface-card p-5">
       <div className="flex items-start gap-4">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border/55 bg-secondary text-secondary-foreground">
           {slide ? <Presentation className="size-5" /> : <FileText className="size-5" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><h3 className="truncate font-semibold" title={document.fileName}>{document.fileName}</h3><p className="mt-1 text-xs text-muted-foreground">{formatBytes(document.sizeBytes)} · {shortType(document.mediaType)}</p></div>
-            <Button variant="ghost" size="icon-sm" onClick={onDelete} disabled={deleting || processing} aria-label={`Remove ${document.fileName}`}>
+            <Button variant="ghost" size="icon-sm" onClick={onDelete} disabled={deleting || processing} aria-label={`Xóa ${document.fileName}`}>
               {deleting ? <LoaderCircle className="animate-spin" /> : <Trash2 />}
             </Button>
           </div>
           <div className="mt-4 flex items-center gap-2">
             <StatusBadge document={document} />
-            <span className="truncate font-mono text-[0.65rem] text-muted-foreground" title={document.sha256}>SHA-256 {document.sha256.slice(0, 10)}…</span>
+            {document.pageCount ? <span className="text-xs text-muted-foreground">{document.pageCount} trang</span> : null}
           </div>
-          {document.status === "FAILED" ? <p className="mt-3 text-sm text-destructive">This document could not be processed. Removing and uploading a clean copy is safe.</p> : null}
+          {document.status === "READY" ? <p className="mt-3 text-sm text-muted-foreground">RTTA có thể dùng tài liệu này khi giải thích khái niệm trong cuộc họp.</p> : null}
+          {document.status === "FAILED" ? <p className="mt-3 text-sm text-destructive">Không thể xử lý tài liệu. Bạn có thể xóa và tải lên một bản khác.</p> : null}
         </div>
       </div>
     </article>
@@ -125,9 +130,9 @@ function DocumentCard({ document, deleting, onDelete }: { document: ResearchDocu
 }
 
 function StatusBadge({ document }: { document: ResearchDocumentDto }) {
-  if (document.status === "READY") return <Badge className="gap-1"><CheckCircle2 className="size-3" />Ready for Explain</Badge>
-  if (document.status === "FAILED") return <Badge variant="destructive">Failed</Badge>
-  return <Badge variant="secondary" className="gap-1"><LoaderCircle className="size-3 animate-spin" />Processing</Badge>
+  if (document.status === "READY") return <Badge className="gap-1"><CheckCircle2 className="size-3" />Sẵn sàng</Badge>
+  if (document.status === "FAILED") return <Badge variant="destructive">Không thể xử lý</Badge>
+  return <Badge variant="secondary" className="gap-1"><LoaderCircle className="size-3 animate-spin" />Đang xử lý…</Badge>
 }
 
 function shortType(mediaType: string) {

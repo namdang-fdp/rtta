@@ -15,4 +15,6 @@ public interface ResearchNoteRepository extends JpaRepository<ResearchNote, UUID
 	List<ResearchNote> findAllByMeetingIdAndUtteranceIdOrderByCreatedAtAscIdAsc(
 			UUID meetingId,
 			UUID utteranceId);
+
+	long countByMeetingId(UUID meetingId);
 }

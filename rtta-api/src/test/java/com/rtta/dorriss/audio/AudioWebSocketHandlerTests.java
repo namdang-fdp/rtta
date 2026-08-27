@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 import com.rtta.dorriss.live.LiveSessionHub;
 import com.rtta.dorriss.meeting.RealtimeMeetingCoordinator;
 import com.rtta.dorriss.recording.MeetingRecordingService;
+import com.rtta.dorriss.security.RttaSecurityProperties;
+import com.rtta.dorriss.security.SecretVerifier;
 import com.rtta.dorriss.translation.TranslationEvent;
 import com.rtta.dorriss.translation.TranslationEventType;
 import com.rtta.dorriss.translation.TranslationProvider;
@@ -44,11 +46,13 @@ class AudioWebSocketHandlerTests {
 		AudioWebSocketHandler handler = new AudioWebSocketHandler(
 				new AudioControlProtocol(new ObjectMapper()), provider,
 				new TranslationWireProtocol(new ObjectMapper()),
-				new LiveSessionHub(new ObjectMapper()), coordinator, recording);
+				new LiveSessionHub(new ObjectMapper()), coordinator, recording,
+				securityProperties(), new SecretVerifier());
 		WebSocketSession socket = mock(WebSocketSession.class);
 		when(socket.getId()).thenReturn("recording-failure");
 		when(socket.isOpen()).thenReturn(true);
 		handler.afterConnectionEstablished(socket);
+		handler.handleTextMessage(socket, new TextMessage(authMessage()));
 		handler.handleTextMessage(socket, new TextMessage(startMessage(UUID.randomUUID())));
 
 		handler.handleBinaryMessage(socket, new BinaryMessage(new byte[1_600]));
@@ -67,7 +71,8 @@ class AudioWebSocketHandlerTests {
 				new TranslationWireProtocol(new ObjectMapper()),
 				new LiveSessionHub(new ObjectMapper()),
 				mock(RealtimeMeetingCoordinator.class),
-				mock(MeetingRecordingService.class));
+				mock(MeetingRecordingService.class),
+				securityProperties(), new SecretVerifier());
 		WebSocketSession socket = mock(WebSocketSession.class);
 		AtomicInteger sendCount = new AtomicInteger();
 		UUID sessionId = UUID.randomUUID();
@@ -75,13 +80,14 @@ class AudioWebSocketHandlerTests {
 		when(socket.getId()).thenReturn("test-connection");
 		when(socket.isOpen()).thenReturn(true);
 		doAnswer(invocation -> {
-			if (sendCount.incrementAndGet() == 2) {
+			if (sendCount.incrementAndGet() == 3) {
 				throw new IOException("simulated unreachable client");
 			}
 			return null;
 		}).when(socket).sendMessage(any(WebSocketMessage.class));
 
 		handler.afterConnectionEstablished(socket);
+		handler.handleTextMessage(socket, new TextMessage(authMessage()));
 		handler.handleTextMessage(socket, new TextMessage(startMessage(sessionId)));
 		assertThat(handler.activeSessionCount()).isEqualTo(1);
 		assertThat(provider.session.closed()).isFalse();
@@ -94,7 +100,7 @@ class AudioWebSocketHandlerTests {
 				50,
 				Instant.parse("2026-08-25T00:00:00Z")));
 
-		assertThat(sendCount).hasValue(2);
+		assertThat(sendCount).hasValue(3);
 		assertThat(handler.activeSessionCount()).isZero();
 		assertThat(provider.session.closed()).isTrue();
 		verify(socket).close(CloseStatus.SERVER_ERROR);
@@ -104,6 +110,16 @@ class AudioWebSocketHandlerTests {
 		return """
 				{"type":"START","sessionId":"%s","sampleRate":16000,"channels":1,"bitsPerSample":16,"chunkMs":50}
 				""".formatted(sessionId);
+	}
+
+	private String authMessage() {
+		return "{\"type\":\"AUTH\",\"token\":\"test-device-token\"}";
+	}
+
+	private RttaSecurityProperties securityProperties() {
+		RttaSecurityProperties properties = new RttaSecurityProperties();
+		properties.setExtensionDeviceToken("test-device-token");
+		return properties;
 	}
 
 	private static final class CapturingTranslationProvider implements TranslationProvider {

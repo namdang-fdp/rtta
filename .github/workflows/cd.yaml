@@ -1,0 +1,131 @@
+name: Validate and publish production artifacts
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: rtta-api/pom.xml
+      - name: Test API
+        working-directory: rtta-api
+        run: ./mvnw test
+      - name: Package API
+        working-directory: rtta-api
+        run: ./mvnw package
+
+  validate-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - name: Install web dependencies
+        working-directory: rtta-web
+        run: bun install --frozen-lockfile
+      - name: Test web
+        working-directory: rtta-web
+        run: bun run test
+      - name: Lint web
+        working-directory: rtta-web
+        run: bun run lint
+      - name: Typecheck web
+        working-directory: rtta-web
+        run: bun run typecheck
+      - name: Build web
+        working-directory: rtta-web
+        run: bun run build
+
+  validate-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: rtta-extension/pnpm-lock.yaml
+      - name: Install extension dependencies
+        working-directory: rtta-extension
+        run: pnpm install --frozen-lockfile
+      - name: Test extension
+        working-directory: rtta-extension
+        run: pnpm test
+      - name: Compile extension
+        working-directory: rtta-extension
+        run: pnpm run compile
+      - name: Build production extension
+        working-directory: rtta-extension
+        env:
+          WXT_BACKEND_WS_URL: wss://api-rtta.dorriss.com/ws/audio
+        run: pnpm run build
+      - name: Package production Chrome extension
+        working-directory: rtta-extension/.output/chrome-mv3
+        run: zip -r ../../../rtta-extension-chrome-mv3.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rtta-extension-${{ github.run_number }}-${{ github.sha }}
+          path: rtta-extension-chrome-mv3.zip
+          if-no-files-found: error
+
+  publish-images:
+    needs: [validate-api, validate-web, validate-extension]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - component: api
+            context: ./rtta-api
+            dockerfile: ./rtta-api/Dockerfile
+          - component: web
+            context: ./rtta-web
+            dockerfile: ./rtta-web/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish ${{ matrix.component }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          platforms: linux/amd64
+          tags: |
+            dorrissdang/rtta-${{ matrix.component }}:v${{ github.run_number }}
+            dorrissdang/rtta-${{ matrix.component }}:main
+            dorrissdang/rtta-${{ matrix.component }}:sha-${{ github.sha }}
+            ghcr.io/namdang-fdp/rtta-${{ matrix.component }}:v${{ github.run_number }}
+            ghcr.io/namdang-fdp/rtta-${{ matrix.component }}:main
+            ghcr.io/namdang-fdp/rtta-${{ matrix.component }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/namdang-fdp/rtta
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=rtta-${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=rtta-${{ matrix.component }}

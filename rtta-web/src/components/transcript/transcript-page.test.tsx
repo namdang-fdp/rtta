@@ -5,8 +5,8 @@ import { TranscriptPage } from "@/components/transcript/transcript-page"
 import { getMeeting, getTranscript, listMeetings } from "@/lib/api/meetings"
 import { createBookmark, deleteBookmark, listBookmarks } from "@/lib/api/bookmarks"
 import { createNote, deleteNote, listNotes, updateNote } from "@/lib/api/notes"
-import { explainConcept } from "@/lib/api/ai"
-import type { MeetingDto, TranscriptUtteranceDto } from "@/types/api"
+import { explainConcept, listExplanations } from "@/lib/api/ai"
+import type { AiExplanationDto, MeetingDto, TranscriptUtteranceDto } from "@/types/api"
 
 vi.mock("@/lib/api/meetings", () => ({
   getMeeting: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock("@/lib/api/notes", () => ({
   updateNote: vi.fn(),
 }))
 
-vi.mock("@/lib/api/ai", () => ({ explainConcept: vi.fn() }))
+vi.mock("@/lib/api/ai", () => ({ explainConcept: vi.fn(), listExplanations: vi.fn() }))
 
 const meeting: MeetingDto = {
   id: "meeting-1",
@@ -57,6 +57,22 @@ const utterance: TranscriptUtteranceDto = {
   providerMetadata: { provider: "azure" },
 }
 
+const firstExplanation: AiExplanationDto = {
+  id: "explanation-1",
+  meetingId: meeting.id,
+  utteranceId: utterance.id,
+  selectedText: "Hamiltonian",
+  userQuestion: "Hamiltonian là gì?",
+  requestedDepth: "QUICK",
+  effectiveDepth: "QUICK",
+  deepModelFallback: false,
+  model: "gemini-test-flash",
+  responseMarkdown: "## Giải thích ngắn\n\n**Hamiltonian** biểu diễn năng lượng của hệ.",
+  citations: [],
+  contextWindow: { previousUtterances: 3, followingUtterances: 1, documentChunks: 0 },
+  createdAt: "2026-08-25T00:01:06Z",
+}
+
 describe("TranscriptPage", () => {
   beforeEach(() => {
     vi.mocked(createBookmark).mockReset()
@@ -69,6 +85,8 @@ describe("TranscriptPage", () => {
     vi.mocked(updateNote).mockReset()
     vi.mocked(listNotes).mockResolvedValue([])
     vi.mocked(explainConcept).mockReset()
+    vi.mocked(listExplanations).mockReset()
+    vi.mocked(listExplanations).mockResolvedValue([])
     vi.mocked(listMeetings).mockResolvedValue({
       items: [meeting], page: 0, size: 1, totalItems: 1, totalPages: 1,
     })
@@ -78,39 +96,86 @@ describe("TranscriptPage", () => {
     })
   })
 
-  it("calls Gemini only after an explicit contextual Explain action", async () => {
-    vi.mocked(explainConcept).mockResolvedValue({
-      id: "explanation-1",
-      meetingId: meeting.id,
-      utteranceId: utterance.id,
-      selectedText: "Hamiltonian",
-      userQuestion: null,
-      requestedDepth: "QUICK",
-      effectiveDepth: "QUICK",
-      deepModelFallback: false,
-      model: "gemini-test-flash",
-      responseMarkdown: "## Giải thích ngắn\nHamiltonian biểu diễn năng lượng của hệ.",
-      citations: [],
-      contextWindow: { previousUtterances: 3, followingUtterances: 1, documentChunks: 0 },
-      createdAt: "2026-08-25T00:01:06Z",
-    })
+  it("only asks AI after an explicit action and persists the response", async () => {
+    vi.mocked(explainConcept).mockResolvedValue(firstExplanation)
     render(<TranscriptPage meetingId={meeting.id} />)
 
-    fireEvent.click(await screen.findByRole("button", { name: "Explain a concept from this utterance" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Hỏi AI về đoạn này" }))
     expect(explainConcept).not.toHaveBeenCalled()
-    fireEvent.change(screen.getByRole("textbox", { name: "Concept or selected phrase" }), {
-      target: { value: "Hamiltonian" },
+    fireEvent.change(screen.getByRole("textbox", { name: "Bạn muốn hiểu điều gì?" }), {
+      target: { value: "Hamiltonian là gì?" },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Explain" }))
+    fireEvent.click(screen.getByRole("button", { name: "Giải thích đoạn này" }))
 
     await waitFor(() => expect(explainConcept).toHaveBeenCalledWith(meeting.id, {
       utteranceId: utterance.id,
-      selectedText: "Hamiltonian",
-      userQuestion: undefined,
+      selectedText: utterance.translatedText,
+      userQuestion: "Hamiltonian là gì?",
       depth: "QUICK",
     }))
-    expect(await screen.findByText("Hamiltonian biểu diễn năng lượng của hệ.")).toBeInTheDocument()
-    expect(screen.getByText(/Context: 3 before/)).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Giải thích ngắn" })).toBeInTheDocument()
+    expect(screen.getByText("Hamiltonian", { selector: "strong" })).toBeInTheDocument()
+    expect(screen.queryByText("gemini-test-flash")).not.toBeInTheDocument()
+  })
+
+  it("loads multiple persisted explanations chronologically after reopen", async () => {
+    const followUp = {
+      ...firstExplanation,
+      id: "explanation-2",
+      userQuestion: "Vì sao nó quyết định tiến triển theo thời gian?",
+      responseMarkdown: "Câu trả lời thứ hai.",
+      createdAt: "2026-08-25T00:02:06Z",
+    }
+    vi.mocked(listExplanations).mockResolvedValue([firstExplanation, followUp])
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hỏi AI về đoạn này" }))
+    const firstQuestion = await screen.findByText("Hamiltonian là gì?")
+    const secondQuestion = screen.getByText("Vì sao nó quyết định tiến triển theo thời gian?")
+    expect(firstQuestion.compareDocumentPosition(secondQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Đóng phần giải thích" }))
+    fireEvent.click(screen.getByRole("button", { name: "Hỏi AI về đoạn này" }))
+
+    await waitFor(() => expect(listExplanations).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText("Câu trả lời thứ hai.")).toBeInTheDocument()
+  })
+
+  it("restores explanation history from backend persistence after a fresh render", async () => {
+    vi.mocked(listExplanations).mockResolvedValue([firstExplanation])
+    const firstView = render(<TranscriptPage meetingId={meeting.id} />)
+    fireEvent.click(await screen.findByRole("button", { name: "Hỏi AI về đoạn này" }))
+    expect(await screen.findByText("Hamiltonian là gì?")).toBeInTheDocument()
+    firstView.unmount()
+
+    render(<TranscriptPage meetingId={meeting.id} />)
+    fireEvent.click(await screen.findByRole("button", { name: "Hỏi AI về đoạn này" }))
+
+    expect(await screen.findByText("Hamiltonian là gì?")).toBeInTheDocument()
+    expect(listExplanations).toHaveBeenLastCalledWith(meeting.id, utterance.id, expect.any(AbortSignal))
+  })
+
+  it("creates and displays a persisted follow-up explanation", async () => {
+    const followUp = {
+      ...firstExplanation,
+      id: "explanation-2",
+      userQuestion: "Vì sao tia X có thể làm tổn thương DNA?",
+      responseMarkdown: "Tia X có thể ion hóa phân tử.",
+      createdAt: "2026-08-25T00:02:06Z",
+    }
+    vi.mocked(listExplanations).mockResolvedValue([firstExplanation])
+    vi.mocked(explainConcept).mockResolvedValue(followUp)
+    render(<TranscriptPage meetingId={meeting.id} />)
+
+    fireEvent.click(await screen.findByRole("button", { name: "Hỏi AI về đoạn này" }))
+    const input = await screen.findByRole("textbox", { name: "Hỏi thêm về đoạn này" })
+    fireEvent.change(input, { target: { value: followUp.userQuestion } })
+    fireEvent.click(screen.getByRole("button", { name: "Hỏi tiếp" }))
+
+    await waitFor(() => expect(explainConcept).toHaveBeenCalledWith(meeting.id, expect.objectContaining({
+      utteranceId: utterance.id,
+      userQuestion: followUp.userQuestion,
+    })))
+    expect(await screen.findByText("Tia X có thể ion hóa phân tử.")).toBeInTheDocument()
   })
 
   it("restores linked notes and their translated context after a fresh render", async () => {
@@ -130,7 +195,7 @@ describe("TranscriptPage", () => {
     render(<TranscriptPage meetingId={meeting.id} />)
 
     expect(await screen.findByText("Compare this with the source paper.")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Edit research note" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Sửa ghi chú" })).toBeInTheDocument()
   })
 
   it("persists a timestamp-linked note from the transcript composer", async () => {
@@ -148,11 +213,11 @@ describe("TranscriptPage", () => {
     })
     render(<TranscriptPage meetingId={meeting.id} />)
 
-    fireEvent.click(await screen.findByRole("button", { name: "Add research note" }))
-    fireEvent.change(screen.getByRole("textbox", { name: "Your note" }), {
+    fireEvent.click(await screen.findByRole("button", { name: "Thêm ghi chú" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Ghi chú của bạn" }), {
       target: { value: "Review this derivation." },
     })
-    fireEvent.click(screen.getByRole("button", { name: "Save note" }))
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ghi chú" }))
 
     await waitFor(() => expect(createNote).toHaveBeenCalledWith(meeting.id, {
       utteranceId: utterance.id,
@@ -176,17 +241,17 @@ describe("TranscriptPage", () => {
 
     render(<TranscriptPage meetingId={meeting.id} />)
 
-    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true")
+    expect(await screen.findByRole("button", { name: "Bỏ lưu đoạn này" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("rolls back an optimistic bookmark when persistence fails", async () => {
     vi.mocked(createBookmark).mockRejectedValue(new Error("The bookmark could not be saved."))
     render(<TranscriptPage meetingId={meeting.id} />)
 
-    fireEvent.click(await screen.findByRole("button", { name: "Bookmark utterance" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Lưu đoạn này" }))
 
-    expect(await screen.findByRole("button", { name: "Bookmark utterance" })).toHaveAttribute("aria-pressed", "false")
-    expect(screen.getByText("The bookmark could not be saved.")).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: "Lưu đoạn này" })).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByText("Không thể lưu đoạn này. Vui lòng thử lại.")).toBeInTheDocument()
   })
 
   it("persists a bookmark and reflects the saved state", async () => {
@@ -204,14 +269,14 @@ describe("TranscriptPage", () => {
     vi.mocked(deleteBookmark).mockResolvedValue()
     render(<TranscriptPage meetingId={meeting.id} />)
 
-    const button = await screen.findByRole("button", { name: "Bookmark utterance" })
+    const button = await screen.findByRole("button", { name: "Lưu đoạn này" })
     fireEvent.click(button)
 
     await waitFor(() => expect(createBookmark).toHaveBeenCalledWith(meeting.id, {
       utteranceId: utterance.id,
       offsetMs: utterance.offsetMs,
     }))
-    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true")
+    expect(await screen.findByRole("button", { name: "Bỏ lưu đoạn này" })).toHaveAttribute("aria-pressed", "true")
   })
 
   it("renders persisted Vietnamese primary and English secondary transcript data", async () => {
@@ -225,6 +290,14 @@ describe("TranscriptPage", () => {
     expect(vietnamese).toHaveAttribute("data-language-priority", "primary")
     expect(english).toHaveAttribute("lang", "en")
     expect(english).toHaveAttribute("data-language-priority", "secondary")
+    expect(screen.getByRole("link", { name: "Bản ghi" })).toHaveAttribute(
+      "href",
+      `/meetings/${meeting.id}/transcript`,
+    )
+    expect(screen.getByRole("link", { name: "Ghi chú" })).toHaveAttribute(
+      "href",
+      `/meetings/${meeting.id}/notes`,
+    )
     expect(screen.queryByText(/demo transcript/i)).not.toBeInTheDocument()
   })
 
@@ -232,7 +305,7 @@ describe("TranscriptPage", () => {
     render(<TranscriptPage meetingId={meeting.id} />)
     await screen.findByText(utterance.translatedText)
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "Search transcript" }), {
+    fireEvent.change(screen.getByRole("searchbox", { name: "Tìm trong bản ghi" }), {
       target: { value: "Hamiltonian" },
     })
 
@@ -251,7 +324,7 @@ describe("TranscriptPage", () => {
 
     render(<TranscriptPage />)
 
-    expect(await screen.findByRole("heading", { name: "No meetings yet" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Chưa có cuộc họp nào" })).toBeInTheDocument()
     expect(getMeeting).not.toHaveBeenCalled()
     expect(getTranscript).not.toHaveBeenCalled()
   })

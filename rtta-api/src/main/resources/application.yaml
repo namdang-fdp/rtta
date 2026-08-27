@@ -37,7 +37,28 @@ logging:
     com.rtta.dorriss.audio: INFO
     com.rtta.dorriss.translation: INFO
 
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: ${RTTA_SESSION_TIMEOUT:14d}
+      cookie:
+        http-only: true
+        secure: ${RTTA_SESSION_COOKIE_SECURE:true}
+        same-site: strict
+
+management:
+  endpoints:
+    web:
+      exposure:
+        exclude: "*"
+
 rtta:
+  security:
+    household-code: ${RTTA_HOUSEHOLD_CODE:}
+    extension-device-token: ${RTTA_EXTENSION_DEVICE_TOKEN:}
+    web-allowed-origins: ${RTTA_WEB_ALLOWED_ORIGINS:http://localhost:3000}
+    extension-allowed-origins: ${RTTA_EXTENSION_ALLOWED_ORIGINS:chrome-extension://local-development}
   storage:
     minio:
       endpoint: ${RTTA_MINIO_ENDPOINT:http://localhost:9000}
@@ -45,7 +66,6 @@ rtta:
       secret-key: ${RTTA_MINIO_SECRET_KEY:}
       recordings-bucket: ${RTTA_MINIO_RECORDINGS_BUCKET:rtta-recordings}
       documents-bucket: ${RTTA_MINIO_DOCUMENTS_BUCKET:rtta-documents}
-      presigned-url-duration: ${RTTA_MINIO_PRESIGNED_URL_DURATION:15m}
   recording:
     temp-directory: ${RTTA_RECORDING_TEMP_DIRECTORY:${java.io.tmpdir}/rtta-recordings}
   documents:
@@ -67,7 +87,8 @@ rtta:
     provider: ${RTTA_TRANSLATION_PROVIDER:azure}
     source-language: ${SPEECH_SOURCE_LANGUAGE:en-US}
     target-language: ${SPEECH_TARGET_LANGUAGE:vi}
-    development-session-limit: ${RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT:120s}
+    # Local development quota guard only; 0s is disabled and is the production default.
+    development-session-limit: ${RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT:0s}
     phrase-list:
       # Intentionally disabled by default as a product policy.
       enabled: ${RTTA_TRANSLATION_PHRASE_LIST_ENABLED:false}

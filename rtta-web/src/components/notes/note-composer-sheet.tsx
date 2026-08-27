@@ -39,17 +39,17 @@ export function NoteComposerSheet({
         <SheetHeader className="border-b px-5 py-5 pr-12">
           <div className="mb-2 flex items-center gap-2 text-primary">
             <NotebookPen className="size-4" />
-            <span className="text-xs font-semibold uppercase tracking-[0.12em]">Meeting note</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.12em]">Ghi chú cuộc họp</span>
           </div>
-          <SheetTitle className="editorial-title text-2xl font-bold">Capture this moment</SheetTitle>
+          <SheetTitle className="editorial-title text-2xl font-bold">Ghi lại đoạn này</SheetTitle>
           <SheetDescription>
-            This note stays linked to the finalized transcript moment.
+            Ghi chú này sẽ luôn được gắn với đoạn hoàn chỉnh trong bản ghi.
           </SheetDescription>
         </SheetHeader>
 
         {target ? (
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
-            <div className="rounded-lg border bg-surface-soft p-4">
+            <div className="surface-inset p-4">
               <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <Clock3 className="size-3.5" />
                 {formatOffset(target.offsetMs)}
@@ -59,11 +59,11 @@ export function NoteComposerSheet({
             </div>
 
             <label className="block space-y-2">
-              <span className="text-sm font-medium">Your note</span>
+              <span className="text-sm font-medium">Ghi chú của bạn</span>
               <Textarea
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="What should you remember or follow up on?"
+                placeholder="Bạn muốn ghi nhớ hoặc tìm hiểu thêm điều gì?"
                 className="min-h-44 resize-none bg-card text-base leading-relaxed"
                 autoFocus
               />
@@ -72,13 +72,13 @@ export function NoteComposerSheet({
         ) : null}
 
         <SheetFooter className="border-t px-5 py-4 sm:flex-row sm:justify-end">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>Hủy</Button>
           <Button
             onClick={() => target && onSave(draft.trim())}
             disabled={!target || !draft.trim() || saving}
           >
             {saving ? <LoaderCircle className="animate-spin" /> : null}
-            Save note
+            Lưu ghi chú
           </Button>
         </SheetFooter>
       </SheetContent>

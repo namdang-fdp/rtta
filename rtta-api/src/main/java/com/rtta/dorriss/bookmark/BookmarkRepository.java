@@ -13,4 +13,6 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, UUID> {
 	Optional<Bookmark> findByIdAndMeetingId(UUID id, UUID meetingId);
 
 	Optional<Bookmark> findByMeetingIdAndUtteranceId(UUID meetingId, UUID utteranceId);
+
+	long countByMeetingId(UUID meetingId);
 }

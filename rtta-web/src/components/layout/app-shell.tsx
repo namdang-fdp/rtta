@@ -4,39 +4,29 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   AudioLines,
-  BookOpenText,
-  FileText,
-  NotebookPen,
+  CalendarDays,
+  LogOut,
 } from "lucide-react"
 
+import { useAuth } from "@/components/auth/auth-gate"
 import { RttaMark } from "@/components/brand/rtta-mark"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { section: "live", href: "/", label: "Live", icon: AudioLines },
-  { section: "transcript", href: "/transcript", label: "Transcript", icon: FileText },
-  { section: "notes", href: "/notes", label: "Notes", icon: NotebookPen },
-  { section: "context", href: "/context", label: "Context", icon: BookOpenText },
+  { section: "live", href: "/", label: "Trực tiếp", icon: AudioLines },
+  { section: "meetings", href: "/meetings", label: "Cuộc họp", icon: CalendarDays },
 ] as const
 
 function resolveNavigation(pathname: string) {
-  const meetingMatch = pathname.match(/^\/meetings\/([^/]+)/)
-  const meetingBase = meetingMatch ? `/meetings/${meetingMatch[1]}` : null
-
   return navigation.map((item) => {
-    const href = meetingBase && item.section !== "live"
-      ? `${meetingBase}/${item.section}`
-      : item.href
-    const active = item.section === "live"
-      ? pathname === "/"
-      : pathname === item.href || pathname === `${meetingBase}/${item.section}`
-
-    return { ...item, href, active }
+    const active = item.section === "live" ? pathname === "/" : pathname.startsWith("/meetings")
+    return { ...item, active }
   })
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const auth = useAuth()
   const pathname = usePathname()
   const resolvedNavigation = resolveNavigation(pathname)
 
@@ -47,7 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link
             href="/"
             className="mb-9 flex min-h-11 items-center justify-center gap-3 xl:justify-start xl:px-2"
-            aria-label="RTTA Live workspace"
+            aria-label="Không gian trực tiếp RTTA"
           >
             <RttaMark className="size-10" />
             <span className="hidden min-w-0 xl:block">
@@ -55,12 +45,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 RTTA
               </span>
               <span className="mt-1 block text-[0.68rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                EN → VI Stream
+                Nghiên cứu trực tiếp
               </span>
             </span>
           </Link>
 
-          <nav className="flex flex-1 flex-col gap-2" aria-label="Meeting workspace">
+          <nav className="flex flex-1 flex-col gap-2" aria-label="Điều hướng chính">
             {resolvedNavigation.map((item) => {
               const { active } = item
               const Icon = item.icon
@@ -96,26 +86,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 RT
               </span>
               <span className="hidden min-w-0 xl:block">
-                <span className="block truncate text-sm font-medium text-foreground">RTTA Workspace</span>
-                <span className="block truncate text-xs text-muted-foreground">Local research session</span>
+                <span className="block truncate text-sm font-medium text-foreground">Không gian RTTA</span>
+                <span className="block truncate text-xs text-muted-foreground">Nghiên cứu cuộc họp</span>
               </span>
             </div>
+            <button
+              type="button"
+              onClick={() => void auth?.logout()}
+              className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground xl:justify-start xl:px-2"
+              aria-label="Đăng xuất"
+            >
+              <LogOut className="size-4" />
+              <span className="hidden xl:inline">Đăng xuất</span>
+            </button>
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-col overflow-hidden">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm sm:hidden">
-            <Link href="/" className="flex items-center gap-2 font-serif text-lg font-bold text-primary">
-              <RttaMark className="size-7" />
-              RTTA
-            </Link>
-            <span className="text-xs font-medium tracking-wide text-muted-foreground">EN → VI</span>
-          </header>
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden pb-16 sm:pb-0">{children}</main>
+        <div className="flex min-w-0 flex-col overflow-hidden 2xl:p-3 2xl:pl-0">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden 2xl:rounded-3xl 2xl:border 2xl:border-border/80 2xl:bg-background 2xl:shadow-surface">
+            <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-sm sm:hidden">
+              <Link href="/" className="flex items-center gap-2 font-serif text-lg font-bold text-primary">
+                <RttaMark className="size-7" />
+                RTTA
+              </Link>
+              <span className="text-xs font-medium tracking-wide text-muted-foreground">EN → VI</span>
+            </header>
+            <main className="min-h-0 min-w-0 flex-1 overflow-hidden pb-16 sm:pb-0">{children}</main>
+          </div>
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-4 border-t bg-background/95 px-2 backdrop-blur-md sm:hidden" aria-label="Meeting workspace">
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-2 border-t bg-background/95 px-2 backdrop-blur-md sm:hidden" aria-label="Điều hướng chính">
         {resolvedNavigation.map((item) => {
           const { active } = item
           const Icon = item.icon

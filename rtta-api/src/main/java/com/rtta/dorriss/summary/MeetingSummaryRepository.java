@@ -11,4 +11,6 @@ public interface MeetingSummaryRepository extends JpaRepository<MeetingSummary, 
 	List<MeetingSummary> findAllByMeetingIdOrderByCreatedAtDescIdDesc(UUID meetingId);
 
 	Optional<MeetingSummary> findFirstByMeetingIdOrderByCreatedAtDescIdDesc(UUID meetingId);
+
+	boolean existsByMeetingId(UUID meetingId);
 }

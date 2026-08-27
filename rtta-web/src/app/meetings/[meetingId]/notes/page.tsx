@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import { NotesPage } from "@/components/notes/notes-page"
 
 export const metadata: Metadata = {
-  title: "Meeting notes · RTTA Web",
-  description: "Persisted timestamp-linked research notes for an RTTA meeting.",
+  title: "Ghi chú cuộc họp · RTTA",
+  description: "Ghi chú nghiên cứu gắn với cuộc họp và từng đoạn bản ghi.",
 }
 
 export default async function MeetingNotesRoute({

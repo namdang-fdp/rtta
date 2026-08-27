@@ -8,7 +8,7 @@ export default defineConfig({
     name: "RTTA",
     description: "Real-Time Translation AI for Chrome.",
     minimum_chrome_version: "116",
-    permissions: ["activeTab", "offscreen", "tabCapture"],
+    permissions: ["activeTab", "offscreen", "storage", "tabCapture"],
     icons: {
       16: "icon/16.png",
       32: "icon/32.png",

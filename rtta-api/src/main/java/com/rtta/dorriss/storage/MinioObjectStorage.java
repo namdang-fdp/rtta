@@ -1,13 +1,12 @@
 package com.rtta.dorriss.storage;
 
-import java.net.URI;
+import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
-import io.minio.GetPresignedObjectUrlArgs;
-import io.minio.Http.Method;
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
+import io.minio.StatObjectArgs;
 import io.minio.UploadObjectArgs;
 import org.springframework.stereotype.Component;
 
@@ -35,19 +34,29 @@ public class MinioObjectStorage {
 		}
 	}
 
-	public URI presignedGet(String bucket, String objectKey) {
+	public long size(String bucket, String objectKey) {
 		try {
-			long seconds = properties.getPresignedUrlDuration().toSeconds();
-			int expirySeconds = Math.toIntExact(Math.max(1, Math.min(seconds, 604_800)));
-			return URI.create(client().getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
-					.method(Method.GET)
+			return client().statObject(StatObjectArgs.builder()
 					.bucket(bucket)
 					.object(objectKey)
-					.expiry(expirySeconds, TimeUnit.SECONDS)
-					.build()));
+					.build()).size();
 		}
 		catch (Exception exception) {
-			throw new ObjectStorageException("Object playback URL creation failed", exception);
+			throw new ObjectStorageException("Object metadata lookup failed", exception);
+		}
+	}
+
+	public InputStream open(String bucket, String objectKey, long offset, long length) {
+		try {
+			return client().getObject(GetObjectArgs.builder()
+					.bucket(bucket)
+					.object(objectKey)
+					.offset(offset)
+					.length(length)
+					.build());
+		}
+		catch (Exception exception) {
+			throw new ObjectStorageException("Object stream could not be opened", exception);
 		}
 	}
 

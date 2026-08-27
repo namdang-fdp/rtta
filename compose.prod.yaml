@@ -1,0 +1,37 @@
+name: rtta-production
+
+services:
+  rtta-api:
+    image: ${RTTA_API_IMAGE:-ghcr.io/namdang-fdp/rtta-api:main}
+    env_file:
+      - ${RTTA_ENV_FILE:-.env.production}
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    restart: unless-stopped
+
+  rtta-web:
+    image: ${RTTA_WEB_IMAGE:-ghcr.io/namdang-fdp/rtta-web:main}
+    env_file:
+      - ${RTTA_ENV_FILE:-.env.production}
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+networks:
+  infra:
+    external: true
+    name: ${RTTA_INFRA_NETWORK}

@@ -29,7 +29,7 @@ export function useResearchDocuments(meetingId: string | null) {
       try { await load(controller.signal) }
       catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return
-        setError(caught instanceof Error ? caught.message : "Research documents are unavailable.")
+        setError("Không thể tải tài liệu nghiên cứu. Vui lòng thử lại.")
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
@@ -52,8 +52,8 @@ export function useResearchDocuments(meetingId: string | null) {
       const saved = await uploadDocument(meetingId, file)
       setDocuments((current) => [saved, ...current.filter((item) => item.id !== saved.id)])
       return true
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The research document could not be uploaded.")
+    } catch {
+      setError("Không thể tải tài liệu lên. Hãy kiểm tra định dạng và thử lại.")
       return false
     } finally {
       setUploading(false)
@@ -67,8 +67,8 @@ export function useResearchDocuments(meetingId: string | null) {
     try {
       await deleteDocument(meetingId, documentId)
       setDocuments((current) => current.filter((document) => document.id !== documentId))
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The research document could not be removed.")
+    } catch {
+      setError("Không thể xóa tài liệu. Vui lòng thử lại.")
     } finally {
       setDeletingId(null)
     }

@@ -14,3 +14,19 @@ export function formatElapsed(startedAt: string | null, now = Date.now()): strin
   const clock = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
   return hours > 0 ? `${hours}:${clock}` : clock
 }
+
+export function formatVietnameseDateTime(value: string): string {
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value))
+}
+
+export function formatVietnameseDuration(milliseconds: number | null): string {
+  if (milliseconds === null) return "Đang diễn ra"
+  const totalMinutes = Math.max(0, Math.round(milliseconds / 60_000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (!hours) return `${minutes} phút`
+  return minutes ? `${hours} giờ ${minutes} phút` : `${hours} giờ`
+}

@@ -19,9 +19,19 @@ public record MeetingResponse(
 		Instant createdAt,
 		Instant updatedAt,
 		Map<String, Object> metadata,
-		long transcriptUtteranceCount) {
+		long transcriptUtteranceCount,
+		long bookmarkCount,
+		long noteCount,
+		boolean summaryAvailable,
+		boolean recordingAvailable) {
 
-	public static MeetingResponse from(Meeting meeting, long transcriptUtteranceCount) {
+	public static MeetingResponse from(
+			Meeting meeting,
+			long transcriptUtteranceCount,
+			long bookmarkCount,
+			long noteCount,
+			boolean summaryAvailable,
+			boolean recordingAvailable) {
 		return new MeetingResponse(
 				meeting.getId(),
 				meeting.getLiveSessionId(),
@@ -34,6 +44,10 @@ public record MeetingResponse(
 				meeting.getCreatedAt(),
 				meeting.getUpdatedAt(),
 				meeting.getMetadata(),
-				transcriptUtteranceCount);
+				transcriptUtteranceCount,
+				bookmarkCount,
+				noteCount,
+				summaryAvailable,
+				recordingAvailable);
 	}
 }

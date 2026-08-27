@@ -100,4 +100,44 @@ class ExplainConceptServiceTests {
 				.hasMessageNotContaining("secret upstream detail");
 		verify(explanationRepository, never()).save(any());
 	}
+
+	@Test
+	void listsPersistedUtteranceExplanationsInRepositoryChronology() {
+		UUID meetingId = UUID.randomUUID();
+		UUID utteranceId = UUID.randomUUID();
+		AiExplanation first = new AiExplanation(
+				meetingId,
+				utteranceId,
+				"Hamiltonian",
+				"Hamiltonian là gì?",
+				Map.of(
+						"requestedDepth", "QUICK",
+						"effectiveDepth", "QUICK",
+						"previousUtterances", List.of(Map.of()),
+						"followingUtterances", List.of(),
+						"documents", List.of()),
+				"hidden-model-id",
+				"## Giải thích\nNội dung.",
+				List.of(),
+				Instant.parse("2026-08-25T00:00:01Z"));
+		AiExplanation second = new AiExplanation(
+				meetingId,
+				utteranceId,
+				"Hamiltonian",
+				"Vì sao?",
+				Map.of(),
+				"hidden-model-id",
+				"Câu trả lời tiếp theo.",
+				null,
+				Instant.parse("2026-08-25T00:00:02Z"));
+		when(explanationRepository.findAllByMeetingIdAndUtteranceIdOrderByCreatedAtAscIdAsc(
+				meetingId, utteranceId)).thenReturn(List.of(first, second));
+
+		var history = service.listForUtterance(meetingId, utteranceId);
+
+		assertThat(history).extracting(response -> response.userQuestion())
+				.containsExactly("Hamiltonian là gì?", "Vì sao?");
+		assertThat(history.getFirst().contextWindow().previousUtterances()).isEqualTo(1);
+		assertThat(history.getLast().citations()).isEmpty();
+	}
 }

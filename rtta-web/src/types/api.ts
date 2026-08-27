@@ -21,6 +21,10 @@ export interface MeetingDto {
   updatedAt: string
   metadata: Record<string, unknown>
   transcriptUtteranceCount: number
+  bookmarkCount?: number
+  noteCount?: number
+  summaryAvailable?: boolean
+  recordingAvailable?: boolean
 }
 
 export interface TranscriptUtteranceDto {
@@ -87,6 +91,7 @@ export interface ResearchDocumentDto {
   createdAt: string
   processedAt: string | null
   errorMessage: string | null
+  pageCount?: number | null
 }
 
 export interface ResearchNoteDto {

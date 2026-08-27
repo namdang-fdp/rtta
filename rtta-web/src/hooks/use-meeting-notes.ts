@@ -38,7 +38,7 @@ export function useMeetingNotes(meetingId: string | null) {
         setState({
           meetingId,
           notes: [],
-          error: caught instanceof Error ? caught.message : "Research notes are unavailable.",
+          error: "Không thể tải ghi chú. Vui lòng thử lại.",
         })
       }
     }
@@ -73,10 +73,10 @@ export function useMeetingNotes(meetingId: string | null) {
         error: null,
       }) : current)
       setTarget(null)
-    } catch (caught) {
+    } catch {
       setState((current) => current.meetingId === meetingId ? ({
         ...current,
-        error: caught instanceof Error ? caught.message : "The research note could not be saved.",
+        error: "Không thể lưu ghi chú. Vui lòng thử lại.",
       }) : current)
     } finally {
       setSaving(false)
@@ -95,10 +95,10 @@ export function useMeetingNotes(meetingId: string | null) {
         error: null,
       }) : current)
       return true
-    } catch (caught) {
+    } catch {
       setState((current) => current.meetingId === meetingId ? ({
         ...current,
-        error: caught instanceof Error ? caught.message : "The research note could not be saved.",
+        error: "Không thể lưu ghi chú. Vui lòng thử lại.",
       }) : current)
       return false
     } finally {
@@ -118,10 +118,10 @@ export function useMeetingNotes(meetingId: string | null) {
         error: null,
       }) : current)
       return true
-    } catch (caught) {
+    } catch {
       setState((current) => current.meetingId === meetingId ? ({
         ...current,
-        error: caught instanceof Error ? caught.message : "The research note could not be updated.",
+        error: "Không thể cập nhật ghi chú. Vui lòng thử lại.",
       }) : current)
       return false
     } finally {
@@ -140,10 +140,10 @@ export function useMeetingNotes(meetingId: string | null) {
         notes: current.notes.filter((note) => note.id !== noteId),
         error: null,
       }) : current)
-    } catch (caught) {
+    } catch {
       setState((current) => current.meetingId === meetingId ? ({
         ...current,
-        error: caught instanceof Error ? caught.message : "The research note could not be removed.",
+        error: "Không thể xóa ghi chú. Vui lòng thử lại.",
       }) : current)
     } finally {
       setSaving(false)

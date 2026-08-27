@@ -1,16 +1,22 @@
 package com.rtta.dorriss.live;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +44,10 @@ import org.springframework.context.annotation.Import;
 		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 		properties = {
 				"spike.enabled=false",
-				"rtta.translation.provider=fake"
+				"rtta.translation.provider=fake",
+				"rtta.security.household-code=test-household-code",
+				"rtta.security.extension-device-token=test-device-token",
+				"server.servlet.session.cookie.secure=false"
 		})
 @Import(LiveWebSocketIntegrationTests.FakeProviderConfiguration.class)
 class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
@@ -170,13 +179,42 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	}
 
 	private WebSocket connect(String path, TestListener listener) throws Exception {
-		return HttpClient.newBuilder()
-				.connectTimeout(Duration.ofSeconds(2))
-				.build()
+		if ("/ws/live".equals(path)) return connectAuthenticatedLive(listener);
+		WebSocket socket = rawConnect(HttpClient.newHttpClient(), path, listener);
+		socket.sendText("{\"type\":\"AUTH\",\"token\":\"test-device-token\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("AUTHENTICATED");
+		return socket;
+	}
+
+	private WebSocket connectAuthenticatedLive(TestListener listener) throws Exception {
+		CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+		HttpClient client = HttpClient.newBuilder().cookieHandler(cookies).build();
+		HttpResponse<String> bootstrap = client.send(HttpRequest.newBuilder()
+				.uri(URI.create("http://localhost:" + port + "/api/auth/me"))
+				.GET().build(), HttpResponse.BodyHandlers.ofString());
+		String csrf = bootstrap.body().replaceFirst(".*\\\"csrfToken\\\":\\\"([^\\\"]+)\\\".*", "$1");
+		HttpResponse<String> login = client.send(HttpRequest.newBuilder()
+				.uri(URI.create("http://localhost:" + port + "/api/auth/login"))
+				.header("Content-Type", "application/json")
+				.header("X-CSRF-TOKEN", csrf)
+				.POST(HttpRequest.BodyPublishers.ofString("{\"code\":\"test-household-code\"}"))
+				.build(), HttpResponse.BodyHandlers.ofString());
+		assertThat(login.statusCode()).isEqualTo(200);
+		return rawConnect(client, "/ws/live", listener);
+	}
+
+	private WebSocket rawConnect(HttpClient client, String path, TestListener listener) throws Exception {
+		return client
 				.newWebSocketBuilder()
 				.connectTimeout(Duration.ofSeconds(2))
 				.buildAsync(URI.create("ws://localhost:" + port + path), listener)
 				.get(2, TimeUnit.SECONDS);
+	}
+
+	@Test
+	void unauthenticatedLiveSocketIsRejected() {
+		assertThatThrownBy(() -> rawConnect(HttpClient.newHttpClient(), "/ws/live", new TestListener()))
+				.isInstanceOf(ExecutionException.class);
 	}
 
 	private String startMessage(UUID sessionId) {

@@ -27,6 +27,7 @@ import {
   type CaptureRuntimeMessage,
   type CaptureState,
 } from "../../lib/shared/messages";
+import { getDeviceToken } from "../../lib/device/credential";
 
 interface ChromeTabAudioConstraints extends MediaTrackConstraints {
   readonly mandatory: {
@@ -135,6 +136,10 @@ class OffscreenCaptureController {
       const backendUrl = resolveBackendWebSocketUrl(
         import.meta.env.WXT_BACKEND_WS_URL,
       );
+      const deviceToken = await getDeviceToken();
+      if (deviceToken === null) {
+        throw new Error("Chưa cấu hình mã thiết bị RTTA.");
+      }
       transport = new AudioWebSocketTransport(
         backendUrl,
         (message) => {
@@ -155,6 +160,8 @@ class OffscreenCaptureController {
             );
           }
         },
+        (socketUrl) => new WebSocket(socketUrl),
+        deviceToken,
       );
       await transport.connect(sessionId);
       this.setState(

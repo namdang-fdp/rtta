@@ -76,7 +76,9 @@ describe("AudioWebSocketTransport", () => {
     const connecting = transport.connect(SESSION_ID);
     expect(transport.getState().phase).toBe("connecting");
     socket.open();
-    expect(JSON.parse(socket.sent[0] as string)).toMatchObject({
+    expect(JSON.parse(socket.sent[0] as string)).toEqual({ type: "AUTH", token: "" });
+    socket.message("AUTHENTICATED");
+    expect(JSON.parse(socket.sent[1] as string)).toMatchObject({
       type: "START",
       sampleRate: 16_000,
       channels: 1,
@@ -90,11 +92,11 @@ describe("AudioWebSocketTransport", () => {
 
     const pcm = new ArrayBuffer(1_600);
     transport.sendPcm(pcm);
-    expect(socket.sent[1]).toBe(pcm);
+    expect(socket.sent[2]).toBe(pcm);
 
     const stopping = transport.stop();
     expect(transport.getState().phase).toBe("stopping");
-    expect(JSON.parse(socket.sent[2] as string)).toEqual({
+    expect(JSON.parse(socket.sent[3] as string)).toEqual({
       type: "STOP",
       sessionId: "2b9c9ee0-1511-49d2-a779-d81cf7f7b441",
     });
@@ -121,6 +123,7 @@ describe("AudioWebSocketTransport", () => {
 
     const connecting = transport.connect(SESSION_ID);
     socket.open();
+    socket.message("AUTHENTICATED");
     socket.message("STARTED");
     await connecting;
     socket.finishClose("server stopped");
@@ -141,6 +144,7 @@ describe("AudioWebSocketTransport", () => {
 
     const connecting = transport.connect(SESSION_ID);
     socket.open();
+    socket.message("AUTHENTICATED");
     socket.message("STARTED");
     await connecting;
     socket.bufferedAmount = 32_000;
@@ -148,7 +152,7 @@ describe("AudioWebSocketTransport", () => {
     expect(() => transport.sendPcm(new ArrayBuffer(1_600))).toThrow(
       "buffering exceeded 32 KB",
     );
-    expect(socket.sent).toHaveLength(1);
+    expect(socket.sent).toHaveLength(2);
     expect(transport.getState().phase).toBe("error");
     expect(failures).toHaveLength(1);
   });
@@ -171,6 +175,7 @@ describe("AudioWebSocketTransport", () => {
 
       const connecting = transport.connect(SESSION_ID);
       socket.open();
+      socket.message("AUTHENTICATED");
       socket.message("STARTED");
       await connecting;
 
@@ -198,6 +203,7 @@ describe("AudioWebSocketTransport", () => {
 
     const connecting = transport.connect(SESSION_ID);
     socket.open();
+    socket.message("AUTHENTICATED");
     socket.message("STARTED");
     await connecting;
     socket.message('{"type":"TRANSLATION","eventType":"PARTIAL"}');
