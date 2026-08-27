@@ -49,11 +49,11 @@ export interface StartControlMessage {
 
 export interface AuthControlMessage {
   readonly type: "AUTH";
-  readonly token: string;
+  readonly householdCode: string;
 }
 
-export function createAuthControlMessage(token: string): AuthControlMessage {
-  return { type: "AUTH", token };
+export function createAuthControlMessage(householdCode: string): AuthControlMessage {
+  return { type: "AUTH", householdCode };
 }
 
 export interface StopControlMessage {

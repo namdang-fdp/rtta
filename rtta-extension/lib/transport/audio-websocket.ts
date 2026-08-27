@@ -48,6 +48,7 @@ export class AudioWebSocketTransport {
   private stopTimer: number | null = null;
   private warningActive = false;
   private unexpectedFailureReported = false;
+  private authenticated = false;
 
   constructor(
     private readonly url: string,
@@ -56,7 +57,7 @@ export class AudioWebSocketTransport {
       undefined,
     private readonly socketFactory: AudioWebSocketFactory = (socketUrl) =>
       new WebSocket(socketUrl),
-    private readonly deviceToken = "",
+    private readonly householdCode = "",
   ) {}
 
   getState(): BackendState {
@@ -75,6 +76,7 @@ export class AudioWebSocketTransport {
     this.state = createBackendState("connecting");
     this.warningActive = false;
     this.unexpectedFailureReported = false;
+    this.authenticated = false;
 
     let socket: AudioWebSocketLike;
     try {
@@ -182,6 +184,7 @@ export class AudioWebSocketTransport {
     const socket = this.socket;
     this.socket = null;
     this.sessionId = null;
+    this.authenticated = false;
     this.state = createBackendState("disconnected");
     this.settleConnect(new Error("Backend connection was closed."));
     this.settleStop();
@@ -204,10 +207,10 @@ export class AudioWebSocketTransport {
       }
 
       try {
-        socket.send(JSON.stringify(createAuthControlMessage(this.deviceToken)));
+        socket.send(JSON.stringify(createAuthControlMessage(this.householdCode)));
       } catch (error) {
         this.rejectConnect(
-          errorMessage(error, "Unable to send START to the backend."),
+          errorMessage(error, "Unable to authenticate with the RTTA backend."),
         );
       }
     };
@@ -255,6 +258,7 @@ export class AudioWebSocketTransport {
 
       const acknowledgement = message.acknowledgement;
       if (acknowledgement === "AUTHENTICATED" && this.state.phase === "connecting") {
+        this.authenticated = true;
         try {
           socket.send(JSON.stringify(createStartControlMessage(this.sessionId ?? "")));
         } catch (error) {
@@ -274,7 +278,11 @@ export class AudioWebSocketTransport {
       }
       if (acknowledgement === "ERROR") {
         if (this.state.phase === "connecting") {
-          this.rejectConnect("The backend rejected START.");
+          this.rejectConnect(
+            this.authenticated
+              ? "The backend rejected START."
+              : "Mã gia đình không đúng. Chọn Đổi mã gia đình để thử lại.",
+          );
         } else if (this.state.phase === "stopping") {
           this.completeStop();
         } else {
@@ -334,6 +342,7 @@ export class AudioWebSocketTransport {
     }
 
     this.clearConnectTimer();
+    this.authenticated = false;
     this.state = createBackendState("error");
     this.settleConnect(new Error(message));
 

@@ -62,11 +62,11 @@ The generated diagnostic log is ignored by Git.
 The older spike runner remains disabled by default, so normal startup never
 streams benchmark audio.
 
-`RTTA_WEB_ALLOWED_ORIGINS` and `RTTA_EXTENSION_ALLOWED_ORIGINS` are exact,
-comma-separated allowlists. Configure explicit localhost and installed unpacked
-extension Origins for development; no wildcard is shipped. `/ws/audio` also
-requires the separate `RTTA_EXTENSION_DEVICE_TOKEN` AUTH frame before START or PCM.
-Browser REST and `/ws/live` require the household Spring session.
+`RTTA_WEB_ALLOWED_ORIGINS` remains the exact, comma-separated credentialed web
+allowlist. `/ws/audio` accepts Chrome extension origins as a defense-in-depth
+pattern, but Origin is not authentication: the first frame must be `AUTH` with
+`RTTA_HOUSEHOLD_CODE` before START or PCM. Browser REST and `/ws/live` continue
+to require the household Spring session.
 
 Run all offline tests, including PostgreSQL/pgvector Testcontainers integration:
 

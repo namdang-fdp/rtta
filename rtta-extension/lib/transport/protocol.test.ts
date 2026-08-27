@@ -27,9 +27,9 @@ function translationJson(overrides: Record<string, unknown> = {}): string {
 
 describe("audio WebSocket protocol", () => {
   it("creates the exact S02 START metadata", () => {
-    expect(createAuthControlMessage("device-secret")).toEqual({
+    expect(createAuthControlMessage("household-secret")).toEqual({
       type: "AUTH",
-      token: "device-secret",
+      householdCode: "household-secret",
     });
     expect(createStartControlMessage("test-session")).toEqual({
       type: "START",

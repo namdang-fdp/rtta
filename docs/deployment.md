@@ -7,7 +7,7 @@ RTTA production consists of two environment-agnostic images: Spring on loopback 
 1. In GitHub, configure only `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. GHCR uses the workflow-provided `GITHUB_TOKEN`.
 2. Create `.env.production` beside `compose.prod.yaml` from `.env.production.example` and replace every placeholder. Never commit it.
 3. Set `RTTA_INFRA_NETWORK` to an existing private Docker network that resolves/reaches the configured PostgreSQL and object-storage hosts. Attach the existing infrastructure containers to that network if Docker hostnames such as `postgres` or `minio` are used. RTTA does not create or publish either service.
-4. Generate different high-entropy values for `RTTA_HOUSEHOLD_CODE` and `RTTA_EXTENSION_DEVICE_TOKEN`.
+4. Generate one high-entropy `RTTA_HOUSEHOLD_CODE`. This is the household's **Mã gia đình** for both RTTA Web and the extension.
 
 `RTTA_TRANSLATION_DEVELOPMENT_SESSION_LIMIT` is only a local Azure-F0 quota guard. It is not an Azure service limit. Production defaults to `0s` (unlimited/disabled); local development may opt into `120s`.
 
@@ -47,20 +47,20 @@ The browser first calls `GET /api/auth/me` with `credentials: include`. This cre
 
 `/ws/live` uses the same authenticated API-domain session cookie and independently checks the exact web Origin. Closing the web subscriber does not own or terminate the audio/provider session.
 
-The extension never uses the household session. Its first WebSocket frame is `AUTH` with the locally stored device token. The API responds `AUTHENTICATED`; only then does the extension send `START` and PCM. Failed authentication closes the socket before Azure opens. Exact `RTTA_EXTENSION_ALLOWED_ORIGINS` is an additional check, not a replacement for device authentication.
+The extension never uses the household session cookie. Its first WebSocket frame is `AUTH` with the locally stored household code. The API compares it with `RTTA_HOUSEHOLD_CODE` using constant-time verification and responds `AUTHENTICATED`; only then does the extension send `START` and PCM. Failed authentication returns a generic error and closes the socket before Azure opens. Chrome extension Origin filtering is defense-in-depth only and is not authentication.
 
 ## Extension artifact
 
-1. Download the `rtta-extension-<run>-<sha>` Actions artifact and extract its zip.
-2. Open `chrome://extensions`, enable Developer Mode, select **Load unpacked**, and choose the extracted Chrome MV3 directory.
-3. Open the popup, enter the device token once under **Kết nối RTTA**, and select **Lưu & kết nối**. The token remains only in `chrome.storage.local`, is never displayed after saving, and can be replaced or cleared from the popup.
-4. Copy the installed extension ID, set `RTTA_EXTENSION_ALLOWED_ORIGINS=chrome-extension://<that-id>`, and restart only the API:
+1. Download the `rtta-extension-<run>-<sha>` Actions artifact.
+2. Extract it.
+3. Open `chrome://extensions`.
+4. Enable Developer Mode.
+5. Select **Load unpacked** and choose the extracted Chrome MV3 directory.
+6. Open the RTTA extension.
+7. Under **Kết nối RTTA**, enter the same **Mã gia đình** used by RTTA Web and select **Lưu & kết nối**.
+8. Done. The code remains only in `chrome.storage.local`, is never displayed after saving, and can be replaced or cleared from the popup.
 
-   ```sh
-   docker compose --env-file .env.production -f compose.prod.yaml up -d rtta-api
-   ```
-
-Chrome Web Store publication and a stable manifest key are not required for private V1.
+Installing the artifact requires no server environment edit or API restart.
 
 ## Recording privacy
 
@@ -85,9 +85,9 @@ Local production-like:
 2. Log in with the household code; reload and confirm authentication persists.
 3. Confirm an unauthenticated `/api/meetings` request returns 401.
 4. Confirm authenticated web live WebSocket connection/reconnection works.
-5. Clear the extension credential and confirm the Vietnamese setup state appears.
-6. Save an invalid token and confirm capture is rejected before a meeting starts.
-7. Save the valid token and confirm existing tab capture, PARTIAL/FINAL, and reconnect behavior.
+5. Clear the saved household code and confirm the Vietnamese setup state appears.
+6. Save an invalid household code and confirm capture is rejected before a meeting starts.
+7. Save the valid household code and confirm existing tab capture, PARTIAL/FINAL, and reconnect behavior.
 8. Record a short meeting and play it through the API without any redirect.
 9. Seek repeatedly in the HTML5 audio control and confirm 206 responses.
 10. Log out, confirm research content disappears, and log in again.
@@ -98,7 +98,7 @@ Server:
 2. Confirm both services are healthy and only `127.0.0.1:8080`/`127.0.0.1:3000` are bound.
 3. Apply the two-host tunnel ingress and verify both HTTPS domains.
 4. Log in externally and install the CI extension artifact.
-5. Configure the device token, set the exact installed extension Origin, and restart API.
+5. Enter the same household code used by RTTA Web in the extension; no server-side change is required.
 6. Smoke a real Meet/YouTube translation; verify PARTIAL/FINAL and transcript persistence.
 7. Smoke recording playback/seeking, bookmark/notes/summary/explanation/RAG, and meeting history.
 8. Restart containers; confirm the prior in-memory login session is invalidated and a fresh login works.

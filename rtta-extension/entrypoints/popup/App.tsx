@@ -17,7 +17,11 @@ import {
   type CaptureState,
 } from "../../lib/shared/messages";
 import type { TranslationSnapshot } from "../../lib/translation/state";
-import { clearDeviceToken, getDeviceToken, saveDeviceToken } from "../../lib/device/credential";
+import {
+  clearHouseholdCode,
+  getHouseholdCode,
+  saveHouseholdCode,
+} from "../../lib/auth/household-code";
 
 function formatElapsed(elapsedMs: number): string {
   const totalSeconds = Math.floor(elapsedMs / 1_000);
@@ -74,11 +78,11 @@ function App() {
   const [clock, setClock] = useState(Date.now());
   const [credentialConfigured, setCredentialConfigured] = useState<boolean | null>(null);
   const [editingCredential, setEditingCredential] = useState(false);
-  const [tokenInput, setTokenInput] = useState("");
+  const [codeInput, setCodeInput] = useState("");
   const [setupError, setSetupError] = useState("");
 
   useEffect(() => {
-    void getDeviceToken().then((token) => setCredentialConfigured(token !== null));
+    void getHouseholdCode().then((code) => setCredentialConfigured(code !== null));
   }, []);
 
   useEffect(() => {
@@ -153,18 +157,18 @@ function App() {
     event.preventDefault();
     setSetupError("");
     try {
-      await saveDeviceToken(tokenInput);
-      setTokenInput("");
+      await saveHouseholdCode(codeInput);
+      setCodeInput("");
       setCredentialConfigured(true);
       setEditingCredential(false);
     } catch (error) {
-      setSetupError(errorMessage(error, "Không thể lưu mã thiết bị."));
+      setSetupError(errorMessage(error, "Không thể lưu mã gia đình."));
     }
   }
 
   async function clearCredential() {
-    await clearDeviceToken();
-    setTokenInput("");
+    await clearHouseholdCode();
+    setCodeInput("");
     setCredentialConfigured(false);
     setEditingCredential(false);
   }
@@ -181,8 +185,9 @@ function App() {
           <div><h1 className="text-xl font-semibold">Kết nối RTTA</h1><p className="text-xs text-pink-700">Thiết lập một lần trên thiết bị này</p></div>
         </header>
         <form className="mt-5 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm" onSubmit={(event) => void saveCredential(event)}>
-          <label htmlFor="device-token" className="text-sm font-medium">Mã thiết bị</label>
-          <input id="device-token" type="password" autoComplete="off" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-pink-200 bg-white px-3 outline-none focus:border-pink-500" required autoFocus />
+          <label htmlFor="household-code" className="text-sm font-medium">Mã gia đình</label>
+          <input id="household-code" type="password" autoComplete="off" value={codeInput} onChange={(event) => setCodeInput(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-pink-200 bg-white px-3 outline-none focus:border-pink-500" required autoFocus />
+          <p className="mt-2 text-xs leading-relaxed text-pink-700">Dùng đúng mã gia đình bạn đăng nhập trên RTTA Web.</p>
           {setupError ? <p className="mt-2 text-xs text-rose-700" role="alert">{setupError}</p> : null}
           <button type="submit" className="mt-4 w-full rounded-xl bg-pink-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-600">Lưu &amp; kết nối</button>
           {credentialConfigured ? <button type="button" onClick={() => setEditingCredential(false)} className="mt-2 w-full text-xs text-pink-700">Hủy</button> : null}
@@ -242,7 +247,7 @@ function App() {
           <h1 className="text-xl font-semibold tracking-tight">RTTA</h1>
           <p className="text-xs text-pink-700">Local tab audio streaming</p>
         </div>
-        <button type="button" onClick={() => setEditingCredential(true)} className="ml-auto rounded-lg p-2 text-pink-700 hover:bg-pink-100" aria-label="Thay mã thiết bị"><Settings size={17} /></button>
+        <button type="button" onClick={() => setEditingCredential(true)} className="ml-auto rounded-lg p-2 text-pink-700 hover:bg-pink-100" aria-label="Đổi mã gia đình"><Settings size={17} /></button>
       </header>
 
       <section className="mt-5 rounded-2xl border border-pink-200 bg-white/85 p-4 shadow-sm">
@@ -415,7 +420,10 @@ function App() {
           </div>
         )}
       </section>
-      <button type="button" onClick={() => void clearCredential()} className="mt-3 w-full text-center text-[11px] text-pink-600 hover:text-rose-700">Xóa mã thiết bị</button>
+      <div className="mt-3 flex justify-center gap-4 text-[11px]">
+        <button type="button" onClick={() => setEditingCredential(true)} className="text-pink-600 hover:text-pink-800">Đổi mã gia đình</button>
+        <button type="button" onClick={() => void clearCredential()} className="text-pink-600 hover:text-rose-700">Xóa mã đã lưu</button>
+      </div>
     </main>
   );
 }

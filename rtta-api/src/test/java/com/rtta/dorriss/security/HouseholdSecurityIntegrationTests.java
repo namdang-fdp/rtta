@@ -23,8 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @SpringBootTest(properties = {
 		"spike.enabled=false",
-		"rtta.security.household-code=test-household-code",
-		"rtta.security.extension-device-token=test-device-token"
+		"rtta.security.household-code=test-household-code"
 })
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
@@ -40,13 +39,13 @@ class HouseholdSecurityIntegrationTests extends PostgresIntegrationTestSupport {
 	}
 
 	@Test
-	void deviceTokenCannotAuthorizeRestOrAppearInTheError() throws Exception {
+	void householdCodeCannotAuthorizeRestAsABearerCredential() throws Exception {
 		mvc.perform(get("/api/meetings")
-					.header("Authorization", "Bearer test-device-token"))
+					.header("Authorization", "Bearer test-household-code"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(content().string("{\"message\":\"Authentication required\"}"))
 				.andExpect(result -> assertThat(result.getResponse().getContentAsString())
-						.doesNotContain("test-device-token"));
+						.doesNotContain("test-household-code"));
 	}
 
 	@Test

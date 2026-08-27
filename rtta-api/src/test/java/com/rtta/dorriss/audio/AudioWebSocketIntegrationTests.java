@@ -29,9 +29,12 @@ import com.rtta.dorriss.translation.TranslationProvider;
 import com.rtta.dorriss.translation.TranslationSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -41,9 +44,10 @@ import org.springframework.context.annotation.Import;
 		properties = {
 				"spike.enabled=false",
 				"rtta.translation.provider=fake",
-				"rtta.security.extension-device-token=test-device-token"
+				"rtta.security.household-code=test-household-code"
 		})
 @Import(AudioWebSocketIntegrationTests.FakeProviderConfiguration.class)
+@ExtendWith(OutputCaptureExtension.class)
 class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 
 	@LocalServerPort
@@ -300,7 +304,7 @@ class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 
 	private WebSocket connect(TestListener listener) throws Exception {
 		WebSocket socket = rawConnect(listener);
-		socket.sendText("{\"type\":\"AUTH\",\"token\":\"test-device-token\"}", true).join();
+		socket.sendText("{\"type\":\"AUTH\",\"householdCode\":\"test-household-code\"}", true).join();
 		assertThat(listener.nextText()).isEqualTo("AUTHENTICATED");
 		return socket;
 	}
@@ -316,7 +320,7 @@ class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	}
 
 	@Test
-	void rejectsStartBeforeDeviceAuthentication() throws Exception {
+	void rejectsStartBeforeHouseholdAuthentication() throws Exception {
 		TestListener listener = new TestListener();
 		WebSocket socket = rawConnect(listener);
 		socket.sendText(startMessage(UUID.randomUUID()), true).join();
@@ -325,12 +329,34 @@ class AudioWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	}
 
 	@Test
-	void invalidDeviceAuthenticationClosesWithoutOpeningAzure() throws Exception {
+	void validHouseholdCodeAuthenticatesWithoutOpeningProvider() throws Exception {
 		TestListener listener = new TestListener();
 		WebSocket socket = rawConnect(listener);
-		socket.sendText("{\"type\":\"AUTH\",\"token\":\"invalid\"}", true).join();
+		socket.sendText("{\"type\":\"AUTH\",\"householdCode\":\"test-household-code\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("AUTHENTICATED");
+		assertThat(translationProvider.openAttemptCount()).isZero();
+		socket.sendClose(WebSocket.NORMAL_CLOSURE, "test complete").join();
+	}
+
+	@Test
+	void rejectsPcmBeforeHouseholdAuthentication() throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = rawConnect(listener);
+		socket.sendBinary(ByteBuffer.allocate(1_600), true).join();
 		assertThat(listener.nextText()).isEqualTo("ERROR");
 		assertThat(translationProvider.openAttemptCount()).isZero();
+	}
+
+	@Test
+	void invalidHouseholdAuthenticationClosesWithoutOpeningProvider(CapturedOutput output)
+			throws Exception {
+		TestListener listener = new TestListener();
+		WebSocket socket = rawConnect(listener);
+		String suppliedCode = "supplied-household-code-must-not-be-logged";
+		socket.sendText("{\"type\":\"AUTH\",\"householdCode\":\"" + suppliedCode + "\"}", true).join();
+		assertThat(listener.nextText()).isEqualTo("ERROR");
+		assertThat(translationProvider.openAttemptCount()).isZero();
+		assertThat(output.getAll()).doesNotContain(suppliedCode);
 	}
 
 	private String startMessage(UUID sessionId) {

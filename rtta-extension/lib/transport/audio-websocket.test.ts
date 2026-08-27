@@ -71,12 +71,16 @@ describe("AudioWebSocketTransport", () => {
       (message) => failures.push(message),
       () => undefined,
       () => socket,
+      "household-secret",
     );
 
     const connecting = transport.connect(SESSION_ID);
     expect(transport.getState().phase).toBe("connecting");
     socket.open();
-    expect(JSON.parse(socket.sent[0] as string)).toEqual({ type: "AUTH", token: "" });
+    expect(JSON.parse(socket.sent[0] as string)).toEqual({
+      type: "AUTH",
+      householdCode: "household-secret",
+    });
     socket.message("AUTHENTICATED");
     expect(JSON.parse(socket.sent[1] as string)).toMatchObject({
       type: "START",
@@ -130,6 +134,29 @@ describe("AudioWebSocketTransport", () => {
 
     expect(transport.getState().phase).toBe("error");
     expect(failures).toEqual(["Backend disconnected: server stopped"]);
+  });
+
+  it("reports an invalid household code clearly without sending START", async () => {
+    const socket = new FakeWebSocket();
+    const transport = new AudioWebSocketTransport(
+      "ws://localhost:8080/ws/audio",
+      () => undefined,
+      () => undefined,
+      () => socket,
+      "wrong-household-code",
+    );
+
+    const connecting = transport.connect(SESSION_ID);
+    socket.open();
+    socket.message("ERROR");
+
+    await expect(connecting).rejects.toThrow("Mã gia đình không đúng");
+    expect(socket.sent).toHaveLength(1);
+    expect(JSON.parse(socket.sent[0] as string)).toEqual({
+      type: "AUTH",
+      householdCode: "wrong-household-code",
+    });
+    expect(transport.getState().phase).toBe("error");
   });
 
   it("stops instead of adding PCM when the high-water mark is reached", async () => {

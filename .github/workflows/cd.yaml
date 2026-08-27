@@ -77,6 +77,13 @@ jobs:
         env:
           WXT_BACKEND_WS_URL: wss://api-rtta.dorriss.com/ws/audio
         run: pnpm run build
+      - name: Verify production extension artifact
+        working-directory: rtta-extension
+        run: |
+          node -e 'const fs=require("fs"); const manifest=JSON.parse(fs.readFileSync(".output/chrome-mv3/manifest.json","utf8")); if(manifest.manifest_version!==3) throw new Error("Expected Manifest V3"); if(!manifest.permissions?.includes("storage")) throw new Error("Missing storage permission");'
+          grep -R --fixed-strings --quiet 'wss://api-rtta.dorriss.com/ws/audio' .output/chrome-mv3
+          if grep -R --fixed-strings --quiet 'RTTA_HOUSEHOLD_CODE' .output/chrome-mv3; then exit 1; fi
+          if grep -R --fixed-strings --quiet 'replace-me' .output/chrome-mv3; then exit 1; fi
       - name: Package production Chrome extension
         working-directory: rtta-extension/.output/chrome-mv3
         run: zip -r ../../../rtta-extension-chrome-mv3.zip .

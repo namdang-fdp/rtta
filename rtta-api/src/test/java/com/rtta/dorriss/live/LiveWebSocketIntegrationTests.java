@@ -46,7 +46,6 @@ import org.springframework.context.annotation.Import;
 				"spike.enabled=false",
 				"rtta.translation.provider=fake",
 				"rtta.security.household-code=test-household-code",
-				"rtta.security.extension-device-token=test-device-token",
 				"server.servlet.session.cookie.secure=false"
 		})
 @Import(LiveWebSocketIntegrationTests.FakeProviderConfiguration.class)
@@ -181,7 +180,7 @@ class LiveWebSocketIntegrationTests extends PostgresIntegrationTestSupport {
 	private WebSocket connect(String path, TestListener listener) throws Exception {
 		if ("/ws/live".equals(path)) return connectAuthenticatedLive(listener);
 		WebSocket socket = rawConnect(HttpClient.newHttpClient(), path, listener);
-		socket.sendText("{\"type\":\"AUTH\",\"token\":\"test-device-token\"}", true).join();
+		socket.sendText("{\"type\":\"AUTH\",\"householdCode\":\"test-household-code\"}", true).join();
 		assertThat(listener.nextText()).isEqualTo("AUTHENTICATED");
 		return socket;
 	}

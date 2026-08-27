@@ -105,7 +105,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 			return;
 		}
 		if (!authenticatedConnections.contains(socket.getId())) {
-			failConnection(socket, "authentication-required", "Device authentication is required");
+			failConnection(socket, "authentication-required", "Household authentication is required");
 			return;
 		}
 
@@ -120,7 +120,7 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 	@Override
 	protected void handleBinaryMessage(WebSocketSession socket, BinaryMessage message) {
 		if (!authenticatedConnections.contains(socket.getId())) {
-			failConnection(socket, "authentication-required", "Device authentication is required");
+			failConnection(socket, "authentication-required", "Household authentication is required");
 			return;
 		}
 		AudioConnectionSession session = activeSessions.get(socket.getId());
@@ -212,11 +212,11 @@ final class AudioWebSocketHandler extends AbstractWebSocketHandler {
 
 	private void handleAuth(WebSocketSession socket, AuthCommand command) {
 		if (authenticatedConnections.contains(socket.getId())) {
-			failConnection(socket, "duplicate-auth", "Device is already authenticated");
+			failConnection(socket, "duplicate-auth", "Connection is already authenticated");
 			return;
 		}
-		if (!secretVerifier.matches(command.token(), securityProperties.getExtensionDeviceToken())) {
-			failConnection(socket, "authentication-failed", "Device authentication failed");
+		if (!secretVerifier.matches(command.householdCode(), securityProperties.getHouseholdCode())) {
+			failConnection(socket, "authentication-failed", "Household authentication failed");
 			return;
 		}
 		authenticatedConnections.add(socket.getId());

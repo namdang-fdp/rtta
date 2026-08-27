@@ -39,7 +39,8 @@ final class AudioControlProtocol {
 		}
 
 		return switch (message.type()) {
-			case "AUTH" -> new AuthCommand(message.token() == null ? "" : message.token());
+			case "AUTH" -> new AuthCommand(
+					message.householdCode() == null ? "" : message.householdCode());
 			case "START" -> parseStart(message);
 			case "STOP" -> new StopCommand(parseSessionId(message.sessionId()));
 			default -> throw new AudioProtocolException("Unsupported control message type");
@@ -82,7 +83,7 @@ final class AudioControlProtocol {
 
 	private record WireControlMessage(
 			String type,
-			String token,
+			String householdCode,
 			String sessionId,
 			Integer sampleRate,
 			Integer channels,
@@ -93,7 +94,7 @@ final class AudioControlProtocol {
 
 sealed interface AudioControlCommand permits AuthCommand, StartCommand, StopCommand { }
 
-record AuthCommand(String token) implements AudioControlCommand { }
+record AuthCommand(String householdCode) implements AudioControlCommand { }
 
 record StartCommand(
 		UUID sessionId,

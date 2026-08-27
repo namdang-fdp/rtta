@@ -56,9 +56,7 @@ management:
 rtta:
   security:
     household-code: ${RTTA_HOUSEHOLD_CODE:}
-    extension-device-token: ${RTTA_EXTENSION_DEVICE_TOKEN:}
     web-allowed-origins: ${RTTA_WEB_ALLOWED_ORIGINS:http://localhost:3000}
-    extension-allowed-origins: ${RTTA_EXTENSION_ALLOWED_ORIGINS:chrome-extension://local-development}
   storage:
     minio:
       endpoint: ${RTTA_MINIO_ENDPOINT:http://localhost:9000}

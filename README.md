@@ -39,6 +39,8 @@ MinIO serves its private S3 API at <http://localhost:9000> and local console at 
 
 Keep `SPEECH_KEY`, `GEMINI_API_KEY`, database credentials, and MinIO credentials in the backend environment. Never expose them through `NEXT_PUBLIC_*`, browser code, or extension configuration.
 
+`RTTA_HOUSEHOLD_CODE` is the one shared household secret: RTTA Web exchanges it for a secure server session, while the extension stores the user-entered value in `chrome.storage.local` and sends it only in the authenticated `/ws/audio` control handshake.
+
 - `GEMINI_MODEL` selects normal Explain and Summary generation.
 - `GEMINI_DEEP_MODEL` optionally selects explicit deeper explanations; normal Explain remains available when blank.
 - `GEMINI_EMBEDDING_MODEL` selects document embeddings.

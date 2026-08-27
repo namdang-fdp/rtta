@@ -113,12 +113,12 @@ class AudioWebSocketHandlerTests {
 	}
 
 	private String authMessage() {
-		return "{\"type\":\"AUTH\",\"token\":\"test-device-token\"}";
+		return "{\"type\":\"AUTH\",\"householdCode\":\"test-household-code\"}";
 	}
 
 	private RttaSecurityProperties securityProperties() {
 		RttaSecurityProperties properties = new RttaSecurityProperties();
-		properties.setExtensionDeviceToken("test-device-token");
+		properties.setHouseholdCode("test-household-code");
 		return properties;
 	}
 
